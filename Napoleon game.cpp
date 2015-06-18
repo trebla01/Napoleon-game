@@ -1,103 +1,106 @@
-/*This source code copyrighted by Lazy Foo' Productions (2004-2015)
-and may not be redistributed without written permission.*/
-
-//Using SDL, SDL_image, standard IO, strings, and string streams
+//Using SDL, SDL_image, standard IO, and strings
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
 #include <string>
-#include <sstream>
+#include <iostream>
+using namespace std;
 
 //Screen dimension constants
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 1024;
+const int SCREEN_HEIGHT = 768;
+
+//Card constants
+const int CARD_WIDTH = 165; const int CARD_HEIGHT = 232;
+const int TOTAL_CARDS = 10;
+int cardOffSet = 10;
+int boardOffSet = 4;
+
+enum LCardSprite
+{
+	CARD_SPRITE_MOUSE_OUT = 0,
+	CARD_SPRITE_MOUSE_OVER_MOTION = 1,
+	CARD_SPRITE_MOUSE_DOWN = 2,
+	CARD_SPRITE_MOUSE_UP = 3,
+	CARD_SPRITE_TOTAL = 4
+};
+
+//suits
+const int HEARTS = 0;
+const int SPADES = 1;
+const int DIAMONDS = 2;
+const int CLUBS = 3;
 
 //Texture wrapper class
 class LTexture
 {
-	public:
-		//Initializes variables
-		LTexture();
+public:
+	//Initializes variables
+	LTexture();
 
-		//Deallocates memory
-		~LTexture();
+	//Deallocates memory
+	~LTexture();
 
-		//Loads image at specified path
-		bool loadFromFile( std::string path );
-		
-		#ifdef _SDL_TTF_H
-		//Creates image from font string
-		bool loadFromRenderedText( std::string textureText, SDL_Color textColor );
-		#endif
+	//Loads image at specified path
+	bool loadFromFile(std::string path);
 
-		//Deallocates texture
-		void free();
+#ifdef _SDL_TTF_H
+	//Creates image from font string
+	bool loadFromRenderedText(std::string textureText, SDL_Color textColor);
+#endif
 
-		//Set color modulation
-		void setColor( Uint8 red, Uint8 green, Uint8 blue );
+	//Deallocates texture
+	void free();
 
-		//Set blending
-		void setBlendMode( SDL_BlendMode blending );
+	//Renders texture at given point
+	void render(int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE);
 
-		//Set alpha modulation
-		void setAlpha( Uint8 alpha );
-		
-		//Renders texture at given point
-		void render( int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
+	//Gets image dimensions
+	int getWidth();
+	int getHeight();
 
-		//Gets image dimensions
-		int getWidth();
-		int getHeight();
+private:
+	//The actual hardware texture
+	SDL_Texture* mTexture;
 
-	private:
-		//The actual hardware texture
-		SDL_Texture* mTexture;
-
-		//Image dimensions
-		int mWidth;
-		int mHeight;
+	//Image dimensions
+	int mWidth;
+	int mHeight;
 };
 
-class LWindow
+//Playing Cards
+class Cards
 {
-	public:
-		//Intializes internals
-		LWindow();
+public:
+	//Initializes internal variables
+	Cards();
+	Cards(int s, int v);
 
-		//Creates window
-		bool init();
+	//Sets top left position
+	void setPosition(int x, int y);
 
-		//Creates renderer from internal window
-		SDL_Renderer* createRenderer();
+	void setCard(int s, int v, bool isFacingDown);
 
-		//Handles window events
-		void handleEvent( SDL_Event& e );
+	int getSuit();
+	int getValue();
 
-		//Deallocates internals
-		void free();
+	//Handles mouse event
+	void handleEvent(SDL_Event* e);
 
-		//Window dimensions
-		int getWidth();
-		int getHeight();
+	//Shows card
+	void render();
 
-		//Window focii
-		bool hasMouseFocus();
-		bool hasKeyboardFocus();
-		bool isMinimized();
+private:
+	int suit;
+	int value;
+	
+	bool facedown;
 
-	private:
-		//Window data
-		SDL_Window* mWindow;
+	//Top left position
+	SDL_Point mPosition;
 
-		//Window dimensions
-		int mWidth;
-		int mHeight;
-
-		//Window focus
-		bool mMouseFocus;
-		bool mKeyboardFocus;
-		bool mFullScreen;
-		bool mMinimized;
+	//Currently used global sprite
+	LCardSprite cardCurrentSprite;
 };
 
 //Starts up SDL and creates window
@@ -109,15 +112,21 @@ bool loadMedia();
 //Frees media and shuts down SDL
 void close();
 
-//Our custom window
-LWindow gWindow;
+//The window we'll be rendering to
+SDL_Window* gWindow = NULL;
 
 //The window renderer
 SDL_Renderer* gRenderer = NULL;
 
-//Scene textures
-LTexture gSceneTexture;
+LTexture cardSheetTexture;
+LTexture cardBackTexture;
 
+//Card objects
+Cards yourCards[TOTAL_CARDS];
+Cards opp1Cards[TOTAL_CARDS];
+Cards opp2Cards[TOTAL_CARDS];
+Cards opp3Cards[TOTAL_CARDS];
+Cards opp4Cards[TOTAL_CARDS];
 
 LTexture::LTexture()
 {
@@ -133,7 +142,7 @@ LTexture::~LTexture()
 	free();
 }
 
-bool LTexture::loadFromFile( std::string path )
+bool LTexture::loadFromFile(std::string path)
 {
 	//Get rid of preexisting texture
 	free();
@@ -142,21 +151,21 @@ bool LTexture::loadFromFile( std::string path )
 	SDL_Texture* newTexture = NULL;
 
 	//Load image at specified path
-	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
-	if( loadedSurface == NULL )
+	SDL_Surface* loadedSurface = IMG_Load(path.c_str());
+	if (loadedSurface == NULL)
 	{
-		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
+		printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
 	}
 	else
 	{
 		//Color key image
-		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0, 0xFF, 0xFF ) );
+		SDL_SetColorKey(loadedSurface, SDL_TRUE, SDL_MapRGB(loadedSurface->format, 0, 0xFF, 0xFF));
 
 		//Create texture from surface pixels
-        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
-		if( newTexture == NULL )
+		newTexture = SDL_CreateTextureFromSurface(gRenderer, loadedSurface);
+		if (newTexture == NULL)
 		{
-			printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
+			printf("Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
 		}
 		else
 		{
@@ -166,7 +175,7 @@ bool LTexture::loadFromFile( std::string path )
 		}
 
 		//Get rid of old loaded surface
-		SDL_FreeSurface( loadedSurface );
+		SDL_FreeSurface(loadedSurface);
 	}
 
 	//Return success
@@ -175,20 +184,24 @@ bool LTexture::loadFromFile( std::string path )
 }
 
 #ifdef _SDL_TTF_H
-bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColor )
+bool LTexture::loadFromRenderedText(std::string textureText, SDL_Color textColor)
 {
 	//Get rid of preexisting texture
 	free();
 
 	//Render text surface
-	SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
-	if( textSurface != NULL )
+	SDL_Surface* textSurface = TTF_RenderText_Solid(gFont, textureText.c_str(), textColor);
+	if (textSurface == NULL)
+	{
+		printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+	}
+	else
 	{
 		//Create texture from surface pixels
-        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
-		if( mTexture == NULL )
+		mTexture = SDL_CreateTextureFromSurface(gRenderer, textSurface);
+		if (mTexture == NULL)
 		{
-			printf( "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError() );
+			printf("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
 		}
 		else
 		{
@@ -198,14 +211,9 @@ bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColo
 		}
 
 		//Get rid of old surface
-		SDL_FreeSurface( textSurface );
-	}
-	else
-	{
-		printf( "Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError() );
+		SDL_FreeSurface(textSurface);
 	}
 
-	
 	//Return success
 	return mTexture != NULL;
 }
@@ -214,47 +222,29 @@ bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColo
 void LTexture::free()
 {
 	//Free texture if it exists
-	if( mTexture != NULL )
+	if (mTexture != NULL)
 	{
-		SDL_DestroyTexture( mTexture );
+		SDL_DestroyTexture(mTexture);
 		mTexture = NULL;
 		mWidth = 0;
 		mHeight = 0;
 	}
 }
 
-void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
-{
-	//Modulate texture rgb
-	SDL_SetTextureColorMod( mTexture, red, green, blue );
-}
-
-void LTexture::setBlendMode( SDL_BlendMode blending )
-{
-	//Set blending function
-	SDL_SetTextureBlendMode( mTexture, blending );
-}
-		
-void LTexture::setAlpha( Uint8 alpha )
-{
-	//Modulate texture alpha
-	SDL_SetTextureAlphaMod( mTexture, alpha );
-}
-
-void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
+void LTexture::render(int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip)
 {
 	//Set rendering space and render to screen
 	SDL_Rect renderQuad = { x, y, mWidth, mHeight };
 
 	//Set clip rendering dimensions
-	if( clip != NULL )
+	if (clip != NULL)
 	{
 		renderQuad.w = clip->w;
 		renderQuad.h = clip->h;
 	}
 
 	//Render to screen
-	SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
+	SDL_RenderCopyEx(gRenderer, mTexture, clip, &renderQuad, angle, center, flip);
 }
 
 int LTexture::getWidth()
@@ -267,161 +257,134 @@ int LTexture::getHeight()
 	return mHeight;
 }
 
-LWindow::LWindow()
+Cards::Cards()
 {
-	//Initialize non-existant window
-	mWindow = NULL;
-	mMouseFocus = false;
-	mKeyboardFocus = false;
-	mFullScreen = false;
-	mMinimized = false;
-	mWidth = 0;
-	mHeight = 0;
+	suit = CLUBS;
+	value = 1;
+	facedown == true;
+	mPosition.x = 0;
+	mPosition.y = 0;
+	cardCurrentSprite = CARD_SPRITE_MOUSE_OUT;
 }
 
-bool LWindow::init()
+Cards::Cards(int s, int v)
 {
-	//Create window
-	mWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
-	if( mWindow != NULL )
-	{
-		mMouseFocus = true;
-		mKeyboardFocus = true;
-		mWidth = SCREEN_WIDTH;
-		mHeight = SCREEN_HEIGHT;
-	}
+	suit = s;
+	value = v;
+	facedown == false;
+	mPosition.x = 0;
+	mPosition.y = 0;
 
-	return mWindow != NULL;
+	cardCurrentSprite = CARD_SPRITE_MOUSE_OUT;
 }
 
-SDL_Renderer* LWindow::createRenderer()
+void Cards::setPosition(int x, int y)
 {
-	return SDL_CreateRenderer( mWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+	mPosition.x = x;
+	mPosition.y = y;
 }
 
-void LWindow::handleEvent( SDL_Event& e )
+void Cards::setCard(int s, int v, bool isFacingDown)
 {
-	//Window event occured
-	if( e.type == SDL_WINDOWEVENT )
+	suit = s;
+	value = v;
+	facedown = isFacingDown;
+}
+int Cards::getSuit()
+{
+	return suit;
+}
+int Cards::getValue()
+{
+	return value;
+}
+
+void Cards::handleEvent(SDL_Event* e)
+{
+	//If mouse event happened
+	if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP)
 	{
-		//Caption update flag
-		bool updateCaption = false;
+		//Get mouse position
+		int x, y;
+		SDL_GetMouseState(&x, &y);
 
-		switch( e.window.event )
+		//Check if mouse is in card
+		bool inside = true;
+
+		//Mouse is left of the card
+		if (x < mPosition.x)
 		{
-			//Get new dimensions and repaint on window size change
-			case SDL_WINDOWEVENT_SIZE_CHANGED:
-			mWidth = e.window.data1;
-			mHeight = e.window.data2;
-			SDL_RenderPresent( gRenderer );
-			break;
-
-			//Repaint on exposure
-			case SDL_WINDOWEVENT_EXPOSED:
-			SDL_RenderPresent( gRenderer );
-			break;
-
-			//Mouse entered window
-			case SDL_WINDOWEVENT_ENTER:
-			mMouseFocus = true;
-			updateCaption = true;
-			break;
-			
-			//Mouse left window
-			case SDL_WINDOWEVENT_LEAVE:
-			mMouseFocus = false;
-			updateCaption = true;
-			break;
-
-			//Window has keyboard focus
-			case SDL_WINDOWEVENT_FOCUS_GAINED:
-			mKeyboardFocus = true;
-			updateCaption = true;
-			break;
-
-			//Window lost keyboard focus
-			case SDL_WINDOWEVENT_FOCUS_LOST:
-			mKeyboardFocus = false;
-			updateCaption = true;
-			break;
-
-			//Window minimized
-			case SDL_WINDOWEVENT_MINIMIZED:
-            mMinimized = true;
-            break;
-
-			//Window maxized
-			case SDL_WINDOWEVENT_MAXIMIZED:
-			mMinimized = false;
-            break;
-			
-			//Window restored
-			case SDL_WINDOWEVENT_RESTORED:
-			mMinimized = false;
-            break;
+			inside = false;
+		}
+		//Mouse is right of the card
+		else if (x > mPosition.x + CARD_WIDTH)
+		{
+			inside = false;
+		}
+		//Mouse above the card
+		else if (y < mPosition.y)
+		{
+			inside = false;
+		}
+		//Mouse below the card
+		else if (y > mPosition.y + CARD_HEIGHT)
+		{
+			inside = false;
 		}
 
-		//Update window caption with new data
-		if( updateCaption )
+		//Mouse is outside card
+		if (!inside)
 		{
-			std::stringstream caption;
-			caption << "SDL Tutorial - MouseFocus:" << ( ( mMouseFocus ) ? "On" : "Off" ) << " KeyboardFocus:" << ( ( mKeyboardFocus ) ? "On" : "Off" );
-			SDL_SetWindowTitle( mWindow, caption.str().c_str() );
+			cardCurrentSprite = CARD_SPRITE_MOUSE_OUT;
 		}
-	}
-	//Enter exit full screen on return key
-	else if( e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN )
-	{
-		if( mFullScreen )
-		{
-			SDL_SetWindowFullscreen( mWindow, SDL_FALSE );
-			mFullScreen = false;
-		}
+		//Mouse is inside card
 		else
 		{
-			SDL_SetWindowFullscreen( mWindow, SDL_TRUE );
-			mFullScreen = true;
-			mMinimized = false;
+			//Set mouse over sprite
+			switch (e->type)
+			{
+			case SDL_MOUSEMOTION:
+				cardCurrentSprite = CARD_SPRITE_MOUSE_OVER_MOTION;
+				break;
+
+			case SDL_MOUSEBUTTONDOWN:
+				cardCurrentSprite = CARD_SPRITE_MOUSE_DOWN;
+				break;
+
+			case SDL_MOUSEBUTTONUP:
+				cardCurrentSprite = CARD_SPRITE_MOUSE_UP;
+				break;
+			}
 		}
 	}
 }
 
-void LWindow::free()
+void Cards::render()
 {
-	if( mWindow != NULL )
+	if (facedown == true)
 	{
-		SDL_DestroyWindow( mWindow );
+		cardBackTexture.render(mPosition.x, mPosition.y);
 	}
+	else
+	{
+		SDL_Rect getCardRect = { CARD_WIDTH*(value - 1), CARD_HEIGHT*(suit), CARD_WIDTH, CARD_HEIGHT };
+		//Show current card sprite
+		cardSheetTexture.render(mPosition.x, mPosition.y, &getCardRect);
 
-	mMouseFocus = false;
-	mKeyboardFocus = false;
-	mWidth = 0;
-	mHeight = 0;
-}
 
-int LWindow::getWidth()
-{
-	return mWidth;
-}
-
-int LWindow::getHeight()
-{
-	return mHeight;
-}
-
-bool LWindow::hasMouseFocus()
-{
-	return mMouseFocus;
-}
-
-bool LWindow::hasKeyboardFocus()
-{
-	return mKeyboardFocus;
-}
-
-bool LWindow::isMinimized()
-{
-	return mMinimized;
+		if (cardCurrentSprite == CARD_SPRITE_MOUSE_OVER_MOTION)
+		{
+			SDL_Rect highlightRect = { mPosition.x, mPosition.y, CARD_WIDTH, CARD_HEIGHT };
+			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0, 0xFF);
+			SDL_RenderDrawRect(gRenderer, &highlightRect);
+		}
+		if (cardCurrentSprite == CARD_SPRITE_MOUSE_DOWN)
+		{
+			SDL_Rect highlightRect = { mPosition.x, mPosition.y, CARD_WIDTH, CARD_HEIGHT };
+			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0, 0, 0xFF);
+			SDL_RenderDrawRect(gRenderer, &highlightRect);
+		}
+	}
 }
 
 bool init()
@@ -430,44 +393,45 @@ bool init()
 	bool success = true;
 
 	//Initialize SDL
-	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
-		printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
+		printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
 		success = false;
 	}
 	else
 	{
 		//Set texture filtering to linear
-		if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
+		if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
 		{
-			printf( "Warning: Linear texture filtering not enabled!" );
+			printf("Warning: Linear texture filtering not enabled!");
 		}
 
 		//Create window
-		if( !gWindow.init() )
+		gWindow = SDL_CreateWindow("Napoleon game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (gWindow == NULL)
 		{
-			printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
+			printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
 			success = false;
 		}
 		else
 		{
-			//Create renderer for window
-			gRenderer = gWindow.createRenderer();
-			if( gRenderer == NULL )
+			//Create vsynced renderer for window
+			gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+			if (gRenderer == NULL)
 			{
-				printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
+				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
 				success = false;
 			}
 			else
 			{
 				//Initialize renderer color
-				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
 				//Initialize PNG loading
 				int imgFlags = IMG_INIT_PNG;
-				if( !( IMG_Init( imgFlags ) & imgFlags ) )
+				if (!(IMG_Init(imgFlags) & imgFlags))
 				{
-					printf( "SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError() );
+					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
 					success = false;
 				}
 			}
@@ -482,12 +446,14 @@ bool loadMedia()
 	//Loading success flag
 	bool success = true;
 
-	//Load scene texture
-	/*if( !gSceneTexture.loadFromFile( "35_window_events/window.png" ) )
+	//Load sprites
+	if (!cardSheetTexture.loadFromFile("Napoleon game/poker.cards.png") ||
+		!cardBackTexture.loadFromFile("Napoleon game/card_back2.jpg"))
 	{
-		printf( "Failed to load window texture!\n" );
+		printf("Failed to load sprite texture!\n");
 		success = false;
-	}*/
+	}
+
 
 	return success;
 }
@@ -495,68 +461,117 @@ bool loadMedia()
 void close()
 {
 	//Free loaded images
-	gSceneTexture.free();
+	cardSheetTexture.free();
 
 	//Destroy window	
-	SDL_DestroyRenderer( gRenderer );
-	gWindow.free();
+	SDL_DestroyRenderer(gRenderer);
+	SDL_DestroyWindow(gWindow);
+	gWindow = NULL;
+	gRenderer = NULL;
 
 	//Quit SDL subsystems
 	IMG_Quit();
 	SDL_Quit();
 }
 
-int main( int argc, char* args[] )
+int main(int argc, char* args[])
 {
 	//Start up SDL and create window
-	if( !init() )
+	if (!init())
 	{
-		printf( "Failed to initialize!\n" );
+		printf("Failed to initialize!\n");
 	}
 	else
 	{
 		//Load media
-		if( !loadMedia() )
+		if (!loadMedia())
 		{
-			printf( "Failed to load media!\n" );
+			printf("Failed to load media!\n");
 		}
 		else
-		{	
+		{
 			//Main loop flag
 			bool quit = false;
 
 			//Event handler
 			SDL_Event e;
 
+			//generate playing space
+			SDL_Rect yourField = { SCREEN_WIDTH / 4 + boardOffSet/4, SCREEN_HEIGHT - CARD_HEIGHT - 2*cardOffSet, SCREEN_WIDTH / 2 - boardOffSet/4, CARD_HEIGHT + 2*cardOffSet };
+			SDL_Rect opp1Field = { 0, 0, SCREEN_WIDTH / 2 - boardOffSet/2, CARD_HEIGHT + 2 * cardOffSet };
+			SDL_Rect opp2Field = { SCREEN_WIDTH / 2 + boardOffSet/2, 0, SCREEN_WIDTH / 2, CARD_HEIGHT + 2 * cardOffSet };
+			SDL_Rect opp3Field = { 0, CARD_HEIGHT + 2 * cardOffSet + boardOffSet, CARD_HEIGHT + 2 * cardOffSet, SCREEN_WIDTH / 2 - boardOffSet / 2};
+			SDL_Rect opp4Field = { SCREEN_WIDTH - (CARD_HEIGHT + 2 * cardOffSet), CARD_HEIGHT + 2 * cardOffSet + boardOffSet, CARD_HEIGHT + 2 * cardOffSet, SCREEN_WIDTH / 2 - boardOffSet / 2 };
+
+			//generate everyone's cards 
+			for (int i = 0; i < TOTAL_CARDS; i++)
+			{
+				yourCards[i].setCard(SPADES, i+1, false);
+				opp1Cards[i].setCard(SPADES, 1, true);
+				opp2Cards[i].setCard(SPADES, 1, true);
+				opp3Cards[i].setCard(SPADES, 1, true);
+				opp4Cards[i].setCard(SPADES, 1, true);
+				
+			}
+
+			////////////////////// NEEDS WORK CENTERING //////////////////
+
+			//Set card location
+			int cardToCardOffSet = (yourField.w - CARD_WIDTH * (TOTAL_CARDS - 1)/TOTAL_CARDS - 2*cardOffSet) / TOTAL_CARDS;
+			for (int i = 0; i < TOTAL_CARDS; i++)
+			{
+				yourCards[i].setPosition(SCREEN_WIDTH / 4 + cardOffSet + i*cardToCardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
+				opp1Cards[i].setPosition(0 + cardOffSet + i*cardToCardOffSet, cardOffSet);
+				opp2Cards[i].setPosition(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet + i*cardToCardOffSet, cardOffSet);
+
+			}
+			//////////////////////////////////////////////////////////////
+
 			//While application is running
-			while( !quit )
+			while (!quit)
 			{
 				//Handle events on queue
-				while( SDL_PollEvent( &e ) != 0 )
+				while (SDL_PollEvent(&e) != 0)
 				{
 					//User requests quit
-					if( e.type == SDL_QUIT )
+					if (e.type == SDL_QUIT)
 					{
 						quit = true;
 					}
 
-					//Handle window events
-					gWindow.handleEvent( e );
+					//Handle card events
+					for (int i = 0; i < TOTAL_CARDS; ++i)
+					{
+						yourCards[i].handleEvent(&e);
+					}
 				}
 
-				//Only draw when not minimized
-				if( !gWindow.isMinimized() )
+				//Clear screen
+				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+				SDL_RenderClear(gRenderer);
+
+				//Render boards
+				SDL_SetRenderDrawColor(gRenderer, 0, 0xFF, 0, 0xFF);
+				SDL_RenderFillRect(gRenderer, &yourField);
+				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0, 0, 0xFF);
+				SDL_RenderFillRect(gRenderer, &opp1Field);
+				SDL_SetRenderDrawColor(gRenderer, 0, 0, 0xFF, 0xFF);
+				SDL_RenderFillRect(gRenderer, &opp2Field);
+				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0, 0xFF, 0xFF);
+				SDL_RenderFillRect(gRenderer, &opp3Field);
+				SDL_SetRenderDrawColor(gRenderer, 0, 0xFF, 0xFF, 0xFF);
+				SDL_RenderFillRect(gRenderer, &opp4Field);
+
+				//Render cards
+				for (int i = 0; i < TOTAL_CARDS; ++i)
 				{
-					//Clear screen
-					SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
-					SDL_RenderClear( gRenderer );
-
-					//Render text textures
-					gSceneTexture.render( ( gWindow.getWidth() - gSceneTexture.getWidth() ) / 2, ( gWindow.getHeight() - gSceneTexture.getHeight() ) / 2 );
-
-					//Update screen
-					SDL_RenderPresent( gRenderer );
+					yourCards[i].render();
+					opp1Cards[i].render();
+					opp2Cards[i].render();
 				}
+
+				//Update screen
+				SDL_RenderPresent(gRenderer);
 			}
 		}
 	}
