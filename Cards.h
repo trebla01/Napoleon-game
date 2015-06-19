@@ -15,6 +15,7 @@ public:
 	//Sets top left position
 	void setPosition(int x, int y);
 
+	//sets suit, value, and whether it's revealed or not
 	void setCard(int s, int v, bool isFacingDown);
 
 	int getSuit();
@@ -30,6 +31,7 @@ private:
 	int suit;
 	int value;
 
+	//hidden or not
 	bool facedown;
 
 	//Top left position

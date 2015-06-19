@@ -2,6 +2,7 @@
 #include "LTexture.h"
 #include "Cards.h"
 #include "Constants.h"
+#include "Deck.h"
 using namespace std;
 
 //Starts up SDL and creates window
@@ -147,18 +148,41 @@ int main(int argc, char* args[])
 			SDL_Rect opp3Field = { 0, CARD_HEIGHT + 2 * cardOffSet + boardOffSet, CARD_HEIGHT + 2 * cardOffSet, SCREEN_WIDTH / 2 - boardOffSet / 2};
 			SDL_Rect opp4Field = { SCREEN_WIDTH - (CARD_HEIGHT + 2 * cardOffSet), CARD_HEIGHT + 2 * cardOffSet + boardOffSet, CARD_HEIGHT + 2 * cardOffSet, SCREEN_WIDTH / 2 - boardOffSet / 2 };
 
+			Deck d;
+			d.shuffle();
+			vector<int> deckShuffled = d.deal();
+
 			//generate everyone's cards 
+			
 			for (int i = 0; i < TOTAL_CARDS; i++)
 			{
 				//your cards are revealed
-				yourCards[i].setCard(SPADES, i+1, false); 
-				
-				//opponent's cards are hidden
-				opp1Cards[i].setCard(CLUBS, i+2, true);
-				opp2Cards[i].setCard(DIAMONDS, i+3, true);
-				opp3Cards[i].setCard(HEARTS, i+4, true);
-				opp4Cards[i].setCard(SPADES, i+4, true);
-				
+				yourCards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
+				deckShuffled.erase(deckShuffled.begin());
+			}
+			for (int i = 0; i < TOTAL_CARDS; i++)
+			{
+				//your cards are revealed
+				opp1Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
+				deckShuffled.erase(deckShuffled.begin());
+			}
+			for (int i = 0; i < TOTAL_CARDS; i++)
+			{
+				//your cards are revealed
+				opp2Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
+				deckShuffled.erase(deckShuffled.begin());
+			}
+			for (int i = 0; i < TOTAL_CARDS; i++)
+			{
+				//your cards are revealed
+				opp3Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
+				deckShuffled.erase(deckShuffled.begin());
+			}
+			for (int i = 0; i < TOTAL_CARDS; i++)
+			{
+				//your cards are revealed
+				opp4Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
+				deckShuffled.erase(deckShuffled.begin());
 			}
 
 			////////////////////// NEEDS WORK CENTERING //////////////////
