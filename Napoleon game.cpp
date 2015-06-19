@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include "LTexture.h"
 using namespace std;
 
 //Screen dimension constants
@@ -31,43 +32,6 @@ const int SPADES = 1;
 const int DIAMONDS = 2;
 const int CLUBS = 3;
 
-//Texture wrapper class
-class LTexture
-{
-public:
-	//Initializes variables
-	LTexture();
-
-	//Deallocates memory
-	~LTexture();
-
-	//Loads image at specified path
-	bool loadFromFile(std::string path);
-
-#ifdef _SDL_TTF_H
-	//Creates image from font string
-	bool loadFromRenderedText(std::string textureText, SDL_Color textColor);
-#endif
-
-	//Deallocates texture
-	void free();
-
-	//Renders texture at given point
-	void render(int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE);
-
-	//Gets image dimensions
-	int getWidth();
-	int getHeight();
-
-private:
-	//The actual hardware texture
-	SDL_Texture* mTexture;
-
-	//Image dimensions
-	int mWidth;
-	int mHeight;
-};
-
 //Playing Cards
 class Cards
 {
@@ -88,7 +52,7 @@ public:
 	void handleEvent(SDL_Event* e);
 
 	//Shows card
-	void render();
+	void render(int degrees);
 
 private:
 	int suit;
@@ -115,7 +79,7 @@ void close();
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 
-//The window renderer
+//The window renderer, everything is rendered here
 SDL_Renderer* gRenderer = NULL;
 
 LTexture cardSheetTexture;
@@ -128,140 +92,11 @@ Cards opp2Cards[TOTAL_CARDS];
 Cards opp3Cards[TOTAL_CARDS];
 Cards opp4Cards[TOTAL_CARDS];
 
-LTexture::LTexture()
-{
-	//Initialize
-	mTexture = NULL;
-	mWidth = 0;
-	mHeight = 0;
-}
-
-LTexture::~LTexture()
-{
-	//Deallocate
-	free();
-}
-
-bool LTexture::loadFromFile(std::string path)
-{
-	//Get rid of preexisting texture
-	free();
-
-	//The final texture
-	SDL_Texture* newTexture = NULL;
-
-	//Load image at specified path
-	SDL_Surface* loadedSurface = IMG_Load(path.c_str());
-	if (loadedSurface == NULL)
-	{
-		printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
-	}
-	else
-	{
-		//Color key image
-		SDL_SetColorKey(loadedSurface, SDL_TRUE, SDL_MapRGB(loadedSurface->format, 0, 0xFF, 0xFF));
-
-		//Create texture from surface pixels
-		newTexture = SDL_CreateTextureFromSurface(gRenderer, loadedSurface);
-		if (newTexture == NULL)
-		{
-			printf("Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
-		}
-		else
-		{
-			//Get image dimensions
-			mWidth = loadedSurface->w;
-			mHeight = loadedSurface->h;
-		}
-
-		//Get rid of old loaded surface
-		SDL_FreeSurface(loadedSurface);
-	}
-
-	//Return success
-	mTexture = newTexture;
-	return mTexture != NULL;
-}
-
-#ifdef _SDL_TTF_H
-bool LTexture::loadFromRenderedText(std::string textureText, SDL_Color textColor)
-{
-	//Get rid of preexisting texture
-	free();
-
-	//Render text surface
-	SDL_Surface* textSurface = TTF_RenderText_Solid(gFont, textureText.c_str(), textColor);
-	if (textSurface == NULL)
-	{
-		printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
-	}
-	else
-	{
-		//Create texture from surface pixels
-		mTexture = SDL_CreateTextureFromSurface(gRenderer, textSurface);
-		if (mTexture == NULL)
-		{
-			printf("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
-		}
-		else
-		{
-			//Get image dimensions
-			mWidth = textSurface->w;
-			mHeight = textSurface->h;
-		}
-
-		//Get rid of old surface
-		SDL_FreeSurface(textSurface);
-	}
-
-	//Return success
-	return mTexture != NULL;
-}
-#endif
-
-void LTexture::free()
-{
-	//Free texture if it exists
-	if (mTexture != NULL)
-	{
-		SDL_DestroyTexture(mTexture);
-		mTexture = NULL;
-		mWidth = 0;
-		mHeight = 0;
-	}
-}
-
-void LTexture::render(int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip)
-{
-	//Set rendering space and render to screen
-	SDL_Rect renderQuad = { x, y, mWidth, mHeight };
-
-	//Set clip rendering dimensions
-	if (clip != NULL)
-	{
-		renderQuad.w = clip->w;
-		renderQuad.h = clip->h;
-	}
-
-	//Render to screen
-	SDL_RenderCopyEx(gRenderer, mTexture, clip, &renderQuad, angle, center, flip);
-}
-
-int LTexture::getWidth()
-{
-	return mWidth;
-}
-
-int LTexture::getHeight()
-{
-	return mHeight;
-}
-
 Cards::Cards()
 {
 	suit = CLUBS;
 	value = 1;
-	facedown == true;
+	facedown = true;
 	mPosition.x = 0;
 	mPosition.y = 0;
 	cardCurrentSprite = CARD_SPRITE_MOUSE_OUT;
@@ -271,7 +106,7 @@ Cards::Cards(int s, int v)
 {
 	suit = s;
 	value = v;
-	facedown == false;
+	facedown = false;
 	mPosition.x = 0;
 	mPosition.y = 0;
 
@@ -359,17 +194,18 @@ void Cards::handleEvent(SDL_Event* e)
 	}
 }
 
-void Cards::render()
+void Cards::render(int degrees) //render and rotate degrees clockwise
 {
+	SDL_Point rotationPoint = { 0, 0 };
 	if (facedown == true)
 	{
-		cardBackTexture.render(mPosition.x, mPosition.y);
+		cardBackTexture.render(gRenderer, mPosition.x, mPosition.y, NULL, degrees, &rotationPoint);
 	}
 	else
 	{
 		SDL_Rect getCardRect = { CARD_WIDTH*(value - 1), CARD_HEIGHT*(suit), CARD_WIDTH, CARD_HEIGHT };
 		//Show current card sprite
-		cardSheetTexture.render(mPosition.x, mPosition.y, &getCardRect);
+		cardSheetTexture.render(gRenderer, mPosition.x, mPosition.y, &getCardRect, degrees, &rotationPoint);
 
 
 		if (cardCurrentSprite == CARD_SPRITE_MOUSE_OVER_MOTION)
@@ -447,8 +283,8 @@ bool loadMedia()
 	bool success = true;
 
 	//Load sprites
-	if (!cardSheetTexture.loadFromFile("Napoleon game/poker.cards.png") ||
-		!cardBackTexture.loadFromFile("Napoleon game/card_back2.jpg"))
+	if (!cardSheetTexture.loadFromFile("Napoleon game/poker.cards.png", gRenderer) ||
+		!cardBackTexture.loadFromFile("Napoleon game/card_back2.jpg", gRenderer))
 	{
 		printf("Failed to load sprite texture!\n");
 		success = false;
@@ -506,11 +342,14 @@ int main(int argc, char* args[])
 			//generate everyone's cards 
 			for (int i = 0; i < TOTAL_CARDS; i++)
 			{
-				yourCards[i].setCard(SPADES, i+1, false);
-				opp1Cards[i].setCard(SPADES, 1, true);
-				opp2Cards[i].setCard(SPADES, 1, true);
-				opp3Cards[i].setCard(SPADES, 1, true);
-				opp4Cards[i].setCard(SPADES, 1, true);
+				//your cards are revealed
+				yourCards[i].setCard(SPADES, i+1, false); 
+				
+				//opponent's cards are hidden
+				opp1Cards[i].setCard(CLUBS, i+2, true);
+				opp2Cards[i].setCard(DIAMONDS, i+3, true);
+				opp3Cards[i].setCard(HEARTS, i+4, true);
+				opp4Cards[i].setCard(SPADES, i+4, true);
 				
 			}
 
@@ -523,6 +362,10 @@ int main(int argc, char* args[])
 				yourCards[i].setPosition(SCREEN_WIDTH / 4 + cardOffSet + i*cardToCardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
 				opp1Cards[i].setPosition(0 + cardOffSet + i*cardToCardOffSet, cardOffSet);
 				opp2Cards[i].setPosition(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet + i*cardToCardOffSet, cardOffSet);
+
+				//placed vertically, cards rotated about topleft
+				opp3Cards[i].setPosition(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + i*cardToCardOffSet);
+				opp4Cards[i].setPosition(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS*cardToCardOffSet - (i+1) *cardToCardOffSet);
 
 			}
 			//////////////////////////////////////////////////////////////
@@ -565,9 +408,11 @@ int main(int argc, char* args[])
 				//Render cards
 				for (int i = 0; i < TOTAL_CARDS; ++i)
 				{
-					yourCards[i].render();
-					opp1Cards[i].render();
-					opp2Cards[i].render();
+					yourCards[i].render(0);
+					opp1Cards[i].render(0);
+					opp2Cards[i].render(0);
+					opp3Cards[i].render(90);
+					opp4Cards[i].render(270);
 				}
 
 				//Update screen

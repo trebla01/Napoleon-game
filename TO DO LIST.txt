@@ -1,0 +1,7 @@
+TO DO:
+-better spacing for cards
+-card dealer
+-determine what mouseover/mousedown/mouseup does
+
+FINISHED:
+-rotate cards/card backs DONE
