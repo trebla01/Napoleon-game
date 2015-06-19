@@ -6,6 +6,7 @@
 #include <cmath>
 #include "LTexture.h"
 #include <SDL_ttf.h>
+#include "Constants.h"
 
 LTexture::LTexture()
 {

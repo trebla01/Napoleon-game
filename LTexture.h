@@ -1,3 +1,6 @@
+#ifndef LTEXTURE_H
+#define LTEXTURE_H
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
@@ -5,6 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <SDL_ttf.h>
+#include "Constants.h"
 
 //Texture wrapper class
 class LTexture
@@ -40,3 +44,5 @@ private:
 	int mWidth;
 	int mHeight;
 };
+
+#endif
