@@ -27,5 +27,7 @@ const int CARD_HEIGHT = 232;
 const int TOTAL_CARDS = 10;
 const int cardOffSet = 10;
 const int boardOffSet = 4;
+const int cardToCardOffSet = (SCREEN_WIDTH / 2 - boardOffSet / 4 - CARD_WIDTH * (TOTAL_CARDS - 1) / TOTAL_CARDS - 2 * cardOffSet) / TOTAL_CARDS;
+const int onClickOffSet = 20;
 
 #endif

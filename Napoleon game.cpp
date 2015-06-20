@@ -30,6 +30,7 @@ Cards opp1Cards[TOTAL_CARDS];
 Cards opp2Cards[TOTAL_CARDS];
 Cards opp3Cards[TOTAL_CARDS];
 Cards opp4Cards[TOTAL_CARDS];
+Cards baggage[2];
 
 
 bool init()
@@ -93,7 +94,7 @@ bool loadMedia()
 
 	//Load sprites
 	if (!cardSheetTexture.loadFromFile("Napoleon game/poker.cards.png", gRenderer) ||
-		!cardBackTexture.loadFromFile("Napoleon game/card_back2.jpg", gRenderer))
+		!cardBackTexture.loadFromFile("Napoleon game/card_back.png", gRenderer))
 	{
 		printf("Failed to load sprite texture!\n");
 		success = false;
@@ -153,42 +154,30 @@ int main(int argc, char* args[])
 			vector<int> deckShuffled = d.deal();
 
 			//generate everyone's cards 
-			
 			for (int i = 0; i < TOTAL_CARDS; i++)
 			{
 				//your cards are revealed
 				yourCards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
 				deckShuffled.erase(deckShuffled.begin());
-			}
-			for (int i = 0; i < TOTAL_CARDS; i++)
-			{
-				//your cards are revealed
-				opp1Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
-				deckShuffled.erase(deckShuffled.begin());
-			}
-			for (int i = 0; i < TOTAL_CARDS; i++)
-			{
-				//your cards are revealed
-				opp2Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
-				deckShuffled.erase(deckShuffled.begin());
-			}
-			for (int i = 0; i < TOTAL_CARDS; i++)
-			{
-				//your cards are revealed
-				opp3Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
-				deckShuffled.erase(deckShuffled.begin());
-			}
-			for (int i = 0; i < TOTAL_CARDS; i++)
-			{
-				//your cards are revealed
-				opp4Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
-				deckShuffled.erase(deckShuffled.begin());
-			}
 
+				//opponent's cards are hidden
+				opp1Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
+				deckShuffled.erase(deckShuffled.begin());
+				opp2Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
+				deckShuffled.erase(deckShuffled.begin());
+				opp3Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
+				deckShuffled.erase(deckShuffled.begin());
+				opp4Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
+				deckShuffled.erase(deckShuffled.begin());
+			}
+			for (int i = 0; i < 2; i++)
+			{
+				baggage[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
+				deckShuffled.erase(deckShuffled.begin());
+			}
 			////////////////////// NEEDS WORK CENTERING //////////////////
 
 			//Set card location
-			int cardToCardOffSet = (yourField.w - CARD_WIDTH * (TOTAL_CARDS - 1)/TOTAL_CARDS - 2*cardOffSet) / TOTAL_CARDS;
 			for (int i = 0; i < TOTAL_CARDS; i++)
 			{
 				yourCards[i].setPosition(SCREEN_WIDTH / 4 + cardOffSet + i*cardToCardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
@@ -198,8 +187,10 @@ int main(int argc, char* args[])
 				//placed vertically, cards rotated about topleft
 				opp3Cards[i].setPosition(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + i*cardToCardOffSet);
 				opp4Cards[i].setPosition(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS*cardToCardOffSet - (i+1) *cardToCardOffSet);
-
 			}
+
+			baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
+			baggage[1].setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 			//////////////////////////////////////////////////////////////
 
 			//While application is running
@@ -245,6 +236,15 @@ int main(int argc, char* args[])
 					opp2Cards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 					opp3Cards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
 					opp4Cards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
+				}
+				baggage[0].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				baggage[1].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+
+				//render hovered cards fully
+				for (int i = 0; i < TOTAL_CARDS; i++)
+				{
+					if (yourCards[i].getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION )
+						yourCards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				}
 
 				//Update screen

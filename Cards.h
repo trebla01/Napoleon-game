@@ -18,8 +18,13 @@ public:
 	//sets suit, value, and whether it's revealed or not
 	void setCard(int s, int v, bool isFacingDown);
 
+	//sets selected card to be true or false
+	void setSelected(bool s);
+
 	int getSuit();
 	int getValue();
+	bool getIsSelected();
+	LCardSprite getCardSprite();
 
 	//Handles mouse event
 	void handleEvent(SDL_Event* e);
@@ -33,6 +38,9 @@ private:
 
 	//hidden or not
 	bool facedown;
+	
+	//is Selected or not
+	bool isSelected;
 
 	//Top left position
 	SDL_Point mPosition;

@@ -2,6 +2,9 @@ TO DO:
 -better spacing for cards
 -card dealer
 -determine what mouseover/mousedown/mouseup does
+-add hand class
+-add dialogue buttons
+
 
 FINISHED:
 -rotate cards/card backs DONE
