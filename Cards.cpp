@@ -19,11 +19,11 @@ Cards::Cards()
 	cardCurrentSprite = CARD_SPRITE_MOUSE_OUT;
 }
 
-Cards::Cards(int s, int v)
+Cards::Cards(int s, int v, bool isFacingDown)
 {
 	suit = s;
 	value = v;
-	facedown = false;
+	facedown = isFacingDown;
 	isSelected = false;
 	mPosition.x = 0;
 	mPosition.y = 0;

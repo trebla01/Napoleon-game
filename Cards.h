@@ -10,7 +10,7 @@ class Cards
 public:
 	//Initializes internal variables
 	Cards();
-	Cards(int s, int v);
+	Cards(int s, int v, bool isFacingDown);
 
 	//Sets top left position
 	void setPosition(int x, int y);
