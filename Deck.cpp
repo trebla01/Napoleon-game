@@ -41,15 +41,33 @@ void Deck::shuffle()
 	}
 }
 
-//deal the cards to the hands
-vector<int> Deck::deal()
+//deal the cards to the hands, deck will be empty after this
+void Deck::deal(vector<Cards>* p1, vector<Cards>* p2, vector<Cards>* p3, vector<Cards>* p4, vector<Cards>* p5, vector<Cards>* baggage)
 {
-	vector<int> temp;
-	//create a copy temp vector array to deal out the cards
-	for (int i = 0; i < 52; i++)
+	//deal to the player hands
+	for (int i = 0; i < TOTAL_CARDS; i++)
 	{
-		//add newly arrange temp into deck
-		temp.push_back(deck.at(i));
+		Cards tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13 + 1, true);
+		p1->push_back(tempCard);
+		deck.erase(deck.begin());
+		tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13 + 1, true);
+		p2->push_back(tempCard);
+		deck.erase(deck.begin()); 
+		tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13 + 1, true);
+		p3->push_back(tempCard);;
+		deck.erase(deck.begin());
+		tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13 + 1, true);
+		p4->push_back(tempCard);;
+		deck.erase(deck.begin());
+		tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13 + 1, true);
+		p5->push_back(tempCard);;
+		deck.erase(deck.begin());
 	}
-	return temp;
+
+	//give the last two to baggage
+	Cards tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13, true);
+	baggage->push_back(tempCard);
+	deck.erase(deck.begin());
+	tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13, true);
+	baggage->push_back(tempCard);
 }

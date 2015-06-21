@@ -16,7 +16,7 @@ public:
 	void shuffle();
 
 	//deal the cards to the hands
-	vector<int> deal();
+	void deal(vector<Cards>* p1, vector<Cards>* p2, vector<Cards>* p3, vector<Cards>* p4, vector<Cards>* p5, vector<Cards>* baggage);
 
 private:
 	vector<int> deck; //1-13 hearts, next spades, diamonds, clubs

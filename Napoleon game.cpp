@@ -3,6 +3,8 @@
 #include "Cards.h"
 #include "Constants.h"
 #include "Deck.h"
+#include "Hand.h"
+#include <vector>
 using namespace std;
 
 //Starts up SDL and creates window
@@ -24,14 +26,20 @@ SDL_Renderer* gRenderer = NULL;
 LTexture cardSheetTexture;
 LTexture cardBackTexture;
 
-//Card objects
-Cards yourCards[TOTAL_CARDS];
-Cards opp1Cards[TOTAL_CARDS];
-Cards opp2Cards[TOTAL_CARDS];
-Cards opp3Cards[TOTAL_CARDS];
-Cards opp4Cards[TOTAL_CARDS];
-Cards baggage[2];
+//cards dealt to everyone
+vector<Cards> yourCards;
+vector<Cards> opp1Cards;
+vector<Cards> opp2Cards;
+vector<Cards> opp3Cards;
+vector<Cards> opp4Cards;
+vector<Cards> baggage;
 
+//everyone's hands
+Hand yourHand;
+Hand opp1Hand;
+Hand opp2Hand;
+Hand opp3Hand;
+Hand opp4Hand;
 
 bool init()
 {
@@ -151,42 +159,38 @@ int main(int argc, char* args[])
 
 			Deck d;
 			d.shuffle();
-			vector<int> deckShuffled = d.deal();
+			d.deal(&yourCards, &opp1Cards, &opp2Cards, &opp3Cards, &opp4Cards, &baggage);
 
-			//generate everyone's cards 
-			for (int i = 0; i < TOTAL_CARDS; i++)
-			{
-				//your cards are revealed
-				yourCards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, false);
-				deckShuffled.erase(deckShuffled.begin());
+			//put everyone's cards in their hands
+			//your hand is shown
+			yourHand = Hand(yourCards, false);
 
-				//opponent's cards are hidden
-				opp1Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
-				deckShuffled.erase(deckShuffled.begin());
-				opp2Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
-				deckShuffled.erase(deckShuffled.begin());
-				opp3Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
-				deckShuffled.erase(deckShuffled.begin());
-				opp4Cards[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
-				deckShuffled.erase(deckShuffled.begin());
-			}
-			for (int i = 0; i < 2; i++)
-			{
-				baggage[i].setCard(deckShuffled.at(0) / 13, deckShuffled.at(0) % 13 + 1, true);
-				deckShuffled.erase(deckShuffled.begin());
-			}
+			//opponent's hand is hidden
+			opp1Hand = Hand(opp1Cards, true);
+			opp2Hand = Hand(opp2Cards, true);
+			opp3Hand = Hand(opp3Cards, true);
+			opp4Hand = Hand(opp4Cards, true);
+
+			
+			//sort everyone's hands
+			yourHand.sort();
+			opp1Hand.sort();
+			opp2Hand.sort();
+			opp3Hand.sort();
+			opp4Hand.sort();
+
 			////////////////////// NEEDS WORK CENTERING //////////////////
 
 			//Set card location
 			for (int i = 0; i < TOTAL_CARDS; i++)
 			{
-				yourCards[i].setPosition(SCREEN_WIDTH / 4 + cardOffSet + i*cardToCardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
-				opp1Cards[i].setPosition(0 + cardOffSet + i*cardToCardOffSet, cardOffSet);
-				opp2Cards[i].setPosition(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet + i*cardToCardOffSet, cardOffSet);
+				yourHand.at(i)->setPosition(SCREEN_WIDTH / 4 + cardOffSet + i*cardToCardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
+				opp1Hand.at(i)->setPosition(0 + cardOffSet + i*cardToCardOffSet, cardOffSet);
+				opp2Hand.at(i)->setPosition(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet + i*cardToCardOffSet, cardOffSet);
 
 				//placed vertically, cards rotated about topleft
-				opp3Cards[i].setPosition(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + i*cardToCardOffSet);
-				opp4Cards[i].setPosition(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS*cardToCardOffSet - (i+1) *cardToCardOffSet);
+				opp3Hand.at(i)->setPosition(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + i*cardToCardOffSet);
+				opp4Hand.at(i)->setPosition(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS*cardToCardOffSet - (i + 1) *cardToCardOffSet);
 			}
 
 			baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
@@ -208,7 +212,7 @@ int main(int argc, char* args[])
 					//Handle card events
 					for (int i = 0; i < TOTAL_CARDS; ++i)
 					{
-						yourCards[i].handleEvent(&e);
+						yourHand.at(i)->handleEvent(&e);
 					}
 				}
 
@@ -231,11 +235,11 @@ int main(int argc, char* args[])
 				//Render cards
 				for (int i = 0; i < TOTAL_CARDS; ++i)
 				{
-					yourCards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-					opp1Cards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-					opp2Cards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-					opp3Cards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
-					opp4Cards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
+					yourHand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+					opp1Hand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+					opp2Hand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+					opp3Hand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
+					opp4Hand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
 				}
 				baggage[0].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				baggage[1].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
@@ -243,8 +247,8 @@ int main(int argc, char* args[])
 				//render hovered cards fully
 				for (int i = 0; i < TOTAL_CARDS; i++)
 				{
-					if (yourCards[i].getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION )
-						yourCards[i].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+					if (yourHand.at(i)->getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION)
+						yourHand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				}
 
 				//Update screen

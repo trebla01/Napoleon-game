@@ -14,11 +14,13 @@ public:
 	//Initializes internal variables
 	Hand();
 
-	Hand(vector<int> cardsDealt, bool isFacingDown);
+	Hand(vector<Cards> cardsDealt, bool isFacingDown);
 
 	int getHandSize();
 
 	void setHandSize(int s);
+
+	Cards* at(int index);
 
 	//sorted by hearts, spades, diamonds, clubs
 	void sort();

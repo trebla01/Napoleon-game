@@ -36,6 +36,14 @@ void Cards::setPosition(int x, int y)
 	mPosition.x = x;
 	mPosition.y = y;
 }
+
+//set suit and value
+void Cards::setCard(int s, int v)
+{
+	suit = s;
+	value = v;
+}
+
 void Cards::setCard(int s, int v, bool isFacingDown)
 {
 	suit = s;

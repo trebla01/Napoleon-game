@@ -15,6 +15,9 @@ public:
 	//Sets top left position
 	void setPosition(int x, int y);
 
+	//set suit and value
+	void setCard(int s, int v);
+
 	//sets suit, value, and whether it's revealed or not
 	void setCard(int s, int v, bool isFacingDown);
 
@@ -33,7 +36,10 @@ public:
 	void render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture* cardBackTexture, int degrees);
 
 private:
+	//1-13, ace = 1, king = 13
 	int suit;
+
+	//0-3, hearts, spades diamonds, clubs
 	int value;
 
 	//hidden or not
