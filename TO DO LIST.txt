@@ -1,10 +1,12 @@
 TO DO:
 -better spacing for cards
--card dealer
 -determine what mouseover/mousedown/mouseup does
--add hand class
+-add in deSelecting function
+-change all sources of ALL_CARDS to hand.getHandSize()
 -add dialogue buttons
 
 
 FINISHED:
 -rotate cards/card backs DONE
+-card dealer
+-add hand class

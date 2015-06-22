@@ -184,13 +184,13 @@ int main(int argc, char* args[])
 			//Set card location
 			for (int i = 0; i < TOTAL_CARDS; i++)
 			{
-				yourHand.at(i)->setPosition(SCREEN_WIDTH / 4 + cardOffSet + i*cardToCardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
-				opp1Hand.at(i)->setPosition(0 + cardOffSet + i*cardToCardOffSet, cardOffSet);
-				opp2Hand.at(i)->setPosition(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet + i*cardToCardOffSet, cardOffSet);
+				yourHand.at(i)->setPosition(SCREEN_WIDTH / 4 + cardOffSet + i*yourHand.getCardToCardOffSet(), SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
+				opp1Hand.at(i)->setPosition(0 + cardOffSet + i*yourHand.getCardToCardOffSet(), cardOffSet);
+				opp2Hand.at(i)->setPosition(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet + i*yourHand.getCardToCardOffSet(), cardOffSet);
 
 				//placed vertically, cards rotated about topleft
-				opp3Hand.at(i)->setPosition(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + i*cardToCardOffSet);
-				opp4Hand.at(i)->setPosition(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS*cardToCardOffSet - (i + 1) *cardToCardOffSet);
+				opp3Hand.at(i)->setPosition(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + i*yourHand.getCardToCardOffSet());
+				opp4Hand.at(i)->setPosition(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS * yourHand.getCardToCardOffSet() - (i + 1) * yourHand.getCardToCardOffSet());
 			}
 
 			baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
@@ -212,7 +212,7 @@ int main(int argc, char* args[])
 					//Handle card events
 					for (int i = 0; i < TOTAL_CARDS; ++i)
 					{
-						yourHand.at(i)->handleEvent(&e);
+						yourHand.handleEvent(&e);
 					}
 				}
 

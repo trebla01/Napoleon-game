@@ -17,17 +17,28 @@ public:
 	Hand(vector<Cards> cardsDealt, bool isFacingDown);
 
 	int getHandSize();
+	int getSelectedCardIndex();
+	int getCardToCardOffSet();
 
 	void setHandSize(int s);
+	void setSelectedCardIndex(int i);
 
 	Cards* at(int index);
 
 	//sorted by hearts, spades, diamonds, clubs
 	void sort();
 
+	//Handles mouse event
+	void handleEvent(SDL_Event* e);
+
 private:
 	int handSize;
 	vector<Cards> cardsInHand;
+	
+	//-1 means no card selected
+	int selectedCardIndex;
+	
+	int cardToCardOffSet;
 };
 
 #endif

@@ -24,26 +24,33 @@ public:
 	//sets selected card to be true or false
 	void setSelected(bool s);
 
+	//sets card as last card
+	void setLast(bool l);
+
 	int getSuit();
 	int getValue();
 	bool getIsSelected();
+	bool isLast();
 	LCardSprite getCardSprite();
 
 	//Handles mouse event
-	void handleEvent(SDL_Event* e);
+	void handleEvent(SDL_Event* e, int cardToCardOffSet);
 
 	//Shows card
 	void render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture* cardBackTexture, int degrees);
 
 private:
-	//1-13, ace = 1, king = 13
+	//0-3, hearts, spades diamonds, clubs
 	int suit;
 
-	//0-3, hearts, spades diamonds, clubs
+	//1-13, ace = 1, king = 13
 	int value;
 
 	//hidden or not
 	bool facedown;
+
+	//last card or not
+	bool last;
 	
 	//is Selected or not
 	bool isSelected;
