@@ -11,6 +11,10 @@ enum LCardSprite
 	CARD_SPRITE_TOTAL = 4
 };
 
+const int NAPOLEON = 0;
+const int SECETARY = 1;
+const int ENEMY = 2;
+
 //Screen dimension constants
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;

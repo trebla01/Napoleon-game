@@ -2,6 +2,7 @@
 #include "LTexture.h"
 #include "Cards.h"
 #include "Constants.h"
+#include "Helper.h"
 #include "Deck.h"
 #include "Hand.h"
 #include <vector>
@@ -214,6 +215,17 @@ int main(int argc, char* args[])
 					{
 						yourHand.handleEvent(&e);
 					}
+
+					//play selected
+					if (e.type == SDL_KEYDOWN)
+					{
+						//Adjust the velocity
+						switch (e.key.keysym.sym)
+						{
+							case SDLK_SPACE:
+							yourHand.playSelected();
+						}
+					}
 				}
 
 				//Clear screen
@@ -233,19 +245,16 @@ int main(int argc, char* args[])
 				SDL_RenderFillRect(gRenderer, &opp4Field);
 
 				//Render cards
-				for (int i = 0; i < TOTAL_CARDS; ++i)
-				{
-					yourHand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-					opp1Hand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-					opp2Hand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-					opp3Hand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
-					opp4Hand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
-				}
+				yourHand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				opp1Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				opp2Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				opp3Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
+				opp4Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
 				baggage[0].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				baggage[1].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 
 				//render hovered cards fully
-				for (int i = 0; i < TOTAL_CARDS; i++)
+				for (int i = 0; i < yourHand.getHandSize(); i++)
 				{
 					if (yourHand.at(i)->getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION)
 						yourHand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);

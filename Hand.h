@@ -22,14 +22,20 @@ public:
 
 	void setHandSize(int s);
 	void setSelectedCardIndex(int i);
+	void setPositionOfFirstCard(SDL_Point p);
 
 	Cards* at(int index);
 
 	//sorted by hearts, spades, diamonds, clubs
 	void sort();
 
+	//play selected card
+	void playSelected();
+
 	//Handles mouse event
 	void handleEvent(SDL_Event* e);
+
+	void render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture* cardBackTexture, int degrees);
 
 private:
 	int handSize;
@@ -38,7 +44,11 @@ private:
 	//-1 means no card selected
 	int selectedCardIndex;
 	
+	//card to card off set based on number of cards in your hand
 	int cardToCardOffSet;
+
+	//position for top left card
+	SDL_Point positionOfFirstCard;
 };
 
 #endif

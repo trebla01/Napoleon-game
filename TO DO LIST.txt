@@ -3,6 +3,7 @@ TO DO:
 -determine what mouseover/mousedown/mouseup does
 -add in deSelecting function
 -change all sources of ALL_CARDS to hand.getHandSize()
+-add in Hand.render
 -add dialogue buttons
 
 

@@ -45,6 +45,10 @@ void Hand::setSelectedCardIndex(int i)
 {
 	selectedCardIndex = i;
 }
+void Hand::setPositionOfFirstCard(SDL_Point p)
+{
+	positionOfFirstCard = p;
+}
 
 Cards* Hand::at(int index)
 {
@@ -95,6 +99,18 @@ void Hand::sort()
 	cardsInHand.at(handSize - 1).setLast(true);
 }
 
+//play selected card
+void Hand::playSelected()
+{
+	if (selectedCardIndex != -1)
+	{
+		cardsInHand.erase(cardsInHand.begin() + selectedCardIndex);
+		selectedCardIndex = -1;
+		handSize--;
+	}
+	cardToCardOffSet = (SCREEN_WIDTH / 2 - boardOffSet / 4 - CARD_WIDTH * (handSize - 1) / handSize - 2 * cardOffSet) / handSize;
+}
+
 void Hand::handleEvent(SDL_Event* e)
 {
 	//If mouse event happened
@@ -117,5 +133,13 @@ void Hand::handleEvent(SDL_Event* e)
 				}
 			}
 		}
+	}
+}
+
+void Hand::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture* cardBackTexture, int degrees)
+{
+	for (int i = 0; i < handSize; ++i)
+	{
+		cardsInHand.at(i).render(gRenderer, cardSheetTexture, cardBackTexture, degrees);
 	}
 }
