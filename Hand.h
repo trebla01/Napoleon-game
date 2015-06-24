@@ -29,8 +29,14 @@ public:
 	//sorted by hearts, spades, diamonds, clubs
 	void sort();
 
-	//play selected card
-	void playSelected();
+	//find only the viable plays based on the suit of first card played
+	void findViablePlay(int suit);
+
+	//if going first, set all to viable
+	void setAllViable();
+
+	//play selected card, returns true if card was played, returns false otherwise
+	bool playSelected();
 
 	//Handles mouse event
 	void handleEvent(SDL_Event* e);

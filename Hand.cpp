@@ -98,16 +98,73 @@ void Hand::sort()
 	cardsInHand.at(handSize - 1).setLast(true);
 }
 
-//play selected card
-void Hand::playSelected()
+void Hand::findViablePlay(int suit)
 {
-	if (selectedCardIndex != -1)
+	vector <int> firstSuitCardsIndex;
+	for (int i = 0; i < handSize; i++)
+	{
+		if (cardsInHand.at(i).getSuit() == suit)
+		{
+			firstSuitCardsIndex.push_back(i);
+		}
+	}
+
+	if (firstSuitCardsIndex.size() == 0)
+	{
+		//set all cards to viable if you're out of the suit
+		for (int i = 0; i < handSize; i++)
+		{
+			cardsInHand.at(i).setViablePlay(true);
+		}
+	}
+	//if you have the suit, you must play the suit
+	else
+	{
+		for (int i = 0; i < handSize; i++)
+		{
+			if (i == firstSuitCardsIndex.at(0))
+			{
+				cardsInHand.at(i).setViablePlay(true);
+				firstSuitCardsIndex.erase(firstSuitCardsIndex.begin());
+			}
+			else
+				cardsInHand.at(i).setViablePlay(false);
+		}
+	}
+
+}
+
+void Hand::setAllViable()
+{
+	for (int i = 0; i < handSize; i++)
+	{
+		cardsInHand.at(i).setViablePlay(true);
+	}
+}
+
+//play selected card
+bool Hand::playSelected()
+{
+	if (cardsInHand.at(selectedCardIndex).isViablePlay() == false)
+	{
+		cout << "Please follow first played suit!" << endl;
+		return false;
+	}
+	
+	if (selectedCardIndex == -1)
+	{
+		cout << "Please select a card!" << endl;
+		return false;
+	}
+
+	else
 	{
 		cardsInHand.erase(cardsInHand.begin() + selectedCardIndex);
 		selectedCardIndex = -1;
 		handSize--;
 		//if hand size doesn't equal = 0, set last card as the last card in Hand
 		handSize == 0 ? handSize = 0: cardsInHand.at(handSize - 1).setLast(true);
+		return true;
 	}
 }
 
@@ -123,6 +180,8 @@ void Hand::handleEvent(SDL_Event* e)
 		for (int i = 0; i < handSize; i++)
 		{
 			cardsInHand.at(i).handleEvent(e, cardToCardOffSet);
+
+			//if a card was clicked on, select that card, deselect all other cards
 			if (cardsInHand.at(i).getIsSelected() == true)
 			{
 				selectedCardIndex = i;

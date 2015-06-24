@@ -27,10 +27,14 @@ public:
 	//sets card as last card
 	void setLast(bool l);
 
+	//sets the card as viable play or not
+	void setViablePlay(bool v);
+
 	int getSuit();
 	int getValue();
 	bool getIsSelected();
 	bool isLast();
+	bool isViablePlay();
 	LCardSprite getCardSprite();
 
 	//Handles mouse event
@@ -52,6 +56,9 @@ private:
 	//last card or not
 	bool last;
 	
+	//is Viable play or not given the first played suit
+	bool viablePlay;
+
 	//is Selected or not
 	bool isSelected;
 

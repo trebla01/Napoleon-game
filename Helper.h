@@ -51,40 +51,40 @@ Cards determineWinner(Cards c1, Cards c2, Cards c3, Cards c4, Cards c5, int firs
 	}
 
 	//if no trump cards exist, find the biggest value among the cards with suit = firstSuitPlayed
-	vector <Cards> firstSuitPlayedCards;
+	vector <Cards> firstSuitCards;
 	if (c1.getSuit() == firstSuitPlayed)
 	{
-		firstSuitPlayedCards.push_back(c1);
+		firstSuitCards.push_back(c1);
 	}
 	if (c2.getSuit() == firstSuitPlayed)
 	{
-		firstSuitPlayedCards.push_back(c2);
+		firstSuitCards.push_back(c2);
 	}
 	if (c3.getSuit() == firstSuitPlayed)
 	{
-		firstSuitPlayedCards.push_back(c3);
+		firstSuitCards.push_back(c3);
 	}
 	if (c4.getSuit() == firstSuitPlayed)
 	{
-		firstSuitPlayedCards.push_back(c4);
+		firstSuitCards.push_back(c4);
 	}
 	if (c5.getSuit() == firstSuitPlayed)
 	{
-		firstSuitPlayedCards.push_back(c5);
+		firstSuitCards.push_back(c5);
 	}
 
 	//there must be at least one card that follows firstSuitPlayed
-	Cards biggest = firstSuitPlayedCards.at(0);
-	for (int i = 1; i < firstSuitPlayedCards.size(); i++)
+	Cards biggest = firstSuitCards.at(0);
+	for (int i = 1; i < firstSuitCards.size(); i++)
 	{
 		//if ace in first played suit, automatically select as winner
-		if (firstSuitPlayedCards.at(i).getValue() == 1)
+		if (firstSuitCards.at(i).getValue() == 1)
 		{
-			biggest = firstSuitPlayedCards.at(i);
+			biggest = firstSuitCards.at(i);
 			return biggest;
 		}
-		if (firstSuitPlayedCards.at(i).getValue() > biggest.getValue())
-			biggest = firstSuitPlayedCards.at(i);
+		if (firstSuitCards.at(i).getValue() > biggest.getValue())
+			biggest = firstSuitCards.at(i);
 	}
 	return biggest;
 

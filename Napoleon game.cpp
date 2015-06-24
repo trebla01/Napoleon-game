@@ -5,6 +5,7 @@
 #include "Helper.h"
 #include "Deck.h"
 #include "Hand.h"
+#include "Player.h"
 #include <vector>
 using namespace std;
 
@@ -35,12 +36,12 @@ vector<Cards> opp3Cards;
 vector<Cards> opp4Cards;
 vector<Cards> baggage;
 
-//everyone's hands
-Hand yourHand;
-Hand opp1Hand;
-Hand opp2Hand;
-Hand opp3Hand;
-Hand opp4Hand;
+//Players
+Player p1;
+Player p2;
+Player p3;
+Player p4;
+Player p5;
 
 bool init()
 {
@@ -162,36 +163,54 @@ int main(int argc, char* args[])
 			d.shuffle();
 			d.deal(&yourCards, &opp1Cards, &opp2Cards, &opp3Cards, &opp4Cards, &baggage);
 
+			//set p1 as human
+			p1.setCPU(false);
+
+			//set p2,p3,p4,p5 as CPUs
+			p2.setCPU(true);
+			p3.setCPU(true);
+			p4.setCPU(true);
+			p5.setCPU(true);
+
 			//put everyone's cards in their hands
 			//your hand is shown
-			yourHand = Hand(yourCards, false);
+			p1 = Player(Hand(yourCards, false));
 
 			//opponent's hand is hidden
-			opp1Hand = Hand(opp1Cards, true);
-			opp2Hand = Hand(opp2Cards, true);
-			opp3Hand = Hand(opp3Cards, true);
-			opp4Hand = Hand(opp4Cards, true);
+			p2 = Player(Hand(opp1Cards, true));
+			p3 = Player(Hand(opp2Cards, true));
+			p4 = Player(Hand(opp3Cards, true));
+			p5 = Player(Hand(opp4Cards, true));
 
-			
-			//sort everyone's hands
-			yourHand.sort();
-			opp1Hand.sort();
-			opp2Hand.sort();
-			opp3Hand.sort();
-			opp4Hand.sort();
+			p1.getHand()->sort();
+			p2.getHand()->sort();
+			p3.getHand()->sort();
+			p4.getHand()->sort();
+			p5.getHand()->sort();
 
 			//sets the position of the cards to be displayed
-			yourHand.setPositionOfFirstCard(SCREEN_WIDTH / 4 + cardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
-			opp1Hand.setPositionOfFirstCard(cardOffSet, cardOffSet);
-			opp2Hand.setPositionOfFirstCard(SCREEN_WIDTH /2 + boardOffSet /2 + cardOffSet, cardOffSet);
-			opp3Hand.setPositionOfFirstCard(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet);
-			opp4Hand.setPositionOfFirstCard(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS * cardToCardOffSet - cardToCardOffSet);
+			
+			//bottom is p1
+			p1.getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 4 + cardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
+			
+			//top left is p3
+			p3.getHand()->setPositionOfFirstCard(cardOffSet, cardOffSet);
+			
+			//top right is p4
+			p4.getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet, cardOffSet);
+			
+			//bottom left is p2
+			p2.getHand()->setPositionOfFirstCard(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet);
+			
+			//bottom right is p5
+			p5.getHand()->setPositionOfFirstCard(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS * cardToCardOffSet - cardToCardOffSet);
 			
 			//sets the position of the baggage to be displayed
 			baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 			baggage[1].setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
-			//////////////////////////////////////////////////////////////
 
+			int turn = 0;
+			int firstSuit;
 
 			//While application is running
 			while (!quit)
@@ -204,11 +223,13 @@ int main(int argc, char* args[])
 					{
 						quit = true;
 					}
-
+					
+					
 					//Handle card events
 					for (int i = 0; i < TOTAL_CARDS; ++i)
 					{
-						yourHand.handleEvent(&e);
+						//yourHand.handleEvent(&e);
+						p1.getHand()->handleEvent(&e);
 					}
 
 					//play selected
@@ -218,7 +239,8 @@ int main(int argc, char* args[])
 						switch (e.key.keysym.sym)
 						{
 							case SDLK_SPACE:
-							yourHand.playSelected();
+								//yourHand.playSelected();
+								p1.getHand()->playSelected();
 						}
 					}
 				}
@@ -240,21 +262,21 @@ int main(int argc, char* args[])
 				SDL_RenderFillRect(gRenderer, &opp4Field);
 
 				//Render hands
-				yourHand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-				opp1Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-				opp2Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-				opp3Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
-				opp4Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
+				p1.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				p2.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
+				p3.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				p4.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				p5.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
 
 				//render baggage
 				baggage[0].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				baggage[1].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 
 				//render hovered cards fully
-				for (int i = 0; i < yourHand.getHandSize(); i++)
+				for (int i = 0; i < p1.getHand()->getHandSize(); i++)
 				{
-					if (yourHand.at(i)->getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION)
-						yourHand.at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+					if (p1.getHand()->at(i)->getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION)
+						p1.getHand()->at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				}
 
 				//Update screen

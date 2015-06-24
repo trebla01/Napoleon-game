@@ -15,6 +15,7 @@ Cards::Cards()
 	facedown = true;
 	isSelected = false;
 	last = false;
+	viablePlay = true;
 	mPosition.x = 0;
 	mPosition.y = 0;
 	cardCurrentSprite = CARD_SPRITE_MOUSE_OUT;
@@ -26,6 +27,7 @@ Cards::Cards(int s, int v, bool isFacingDown)
 	value = v;
 	facedown = isFacingDown;
 	isSelected = false;
+	viablePlay = true;
 	last = false;
 	mPosition.x = 0;
 	mPosition.y = 0;
@@ -60,6 +62,10 @@ void Cards::setLast(bool l)
 {
 	last = l;
 }
+void Cards::setViablePlay(bool v)
+{
+	viablePlay = v;
+}
 
 int Cards::getSuit()
 {
@@ -76,6 +82,10 @@ bool Cards::getIsSelected()
 bool Cards::isLast()
 {
 	return last;
+}
+bool Cards::isViablePlay()
+{
+	return viablePlay;
 }
 LCardSprite Cards::getCardSprite()
 {
@@ -173,17 +183,23 @@ void Cards::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture
 		}
 		else
 		{
-			/*if (cardCurrentSprite == CARD_SPRITE_MOUSE_OVER_MOTION)
-			{
-				SDL_Rect highlightRect = { mPosition.x, mPosition.y, CARD_WIDTH, CARD_HEIGHT };
-				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0, 0xFF);
-				SDL_RenderDrawRect(gRenderer, &highlightRect);
-			}*/
-
+			
 			SDL_Rect getCardRect = { CARD_WIDTH*(value - 1), CARD_HEIGHT*(suit), CARD_WIDTH, CARD_HEIGHT };
 			//Show current card sprite
 			cardSheetTexture->render(gRenderer, mPosition.x, mPosition.y, &getCardRect, degrees, &rotationPoint);
 
 		}
+		/*
+		//highlight cards that are viable plays
+		if (viablePlay == true)
+		{
+			SDL_Rect highlightRect;
+			if (last == true)
+				highlightRect = { mPosition.x, mPosition.y, CARD_WIDTH, CARD_HEIGHT };
+			else
+				highlightRect = { mPosition.x, mPosition.y, cardToCardOffSet, CARD_HEIGHT };
+			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0, 0xFF);
+			SDL_RenderDrawRect(gRenderer, &highlightRect);
+		}*/
 	}
 }
