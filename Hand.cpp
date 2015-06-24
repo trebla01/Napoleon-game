@@ -9,7 +9,6 @@ Hand::Hand()
 {
 	handSize = 0;
 	selectedCardIndex = -1;
-	cardToCardOffSet = 0;
 }
 
 Hand::Hand(vector<Cards> cardsDealt, bool isFacingDown)
@@ -21,7 +20,6 @@ Hand::Hand(vector<Cards> cardsDealt, bool isFacingDown)
 		Cards tempCard = Cards(cardsDealt.at(i).getSuit(), cardsDealt.at(i).getValue(), isFacingDown);
 		cardsInHand.push_back(tempCard);
 	}
-	cardToCardOffSet = (SCREEN_WIDTH / 2 - boardOffSet / 4 - CARD_WIDTH * (handSize - 1) / handSize - 2 * cardOffSet) / handSize;
 }
 
 int Hand::getHandSize()
@@ -45,9 +43,10 @@ void Hand::setSelectedCardIndex(int i)
 {
 	selectedCardIndex = i;
 }
-void Hand::setPositionOfFirstCard(SDL_Point p)
+void Hand::setPositionOfFirstCard(int x, int y)
 {
-	positionOfFirstCard = p;
+	positionOfFirstCard.x = x;
+	positionOfFirstCard.y = y;
 }
 
 Cards* Hand::at(int index)
@@ -107,8 +106,9 @@ void Hand::playSelected()
 		cardsInHand.erase(cardsInHand.begin() + selectedCardIndex);
 		selectedCardIndex = -1;
 		handSize--;
+		//if hand size doesn't equal = 0, set last card as the last card in Hand
+		handSize == 0 ? handSize = 0: cardsInHand.at(handSize - 1).setLast(true);
 	}
-	cardToCardOffSet = (SCREEN_WIDTH / 2 - boardOffSet / 4 - CARD_WIDTH * (handSize - 1) / handSize - 2 * cardOffSet) / handSize;
 }
 
 void Hand::handleEvent(SDL_Event* e)
@@ -138,6 +138,35 @@ void Hand::handleEvent(SDL_Event* e)
 
 void Hand::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture* cardBackTexture, int degrees)
 {
+	
+	//first card at the top, last card at the bottom
+	if (degrees == 90)
+	{
+		//set position of cards rotated 90 degrees
+		for (int i = 0; i < handSize; i++)
+		{
+			cardsInHand.at(i).setPosition(positionOfFirstCard.x, positionOfFirstCard.y + i*cardToCardOffSet);
+		}
+	}
+
+	//if the cards are rotated 270 degrees, first card at the bottom, last card at the top
+	else if (degrees == 270)
+	{
+		//set position of cards rotated 270 degrees
+		for (int i = 0; i < handSize; i++)
+		{
+			cardsInHand.at(i).setPosition(positionOfFirstCard.x, positionOfFirstCard.y - i*cardToCardOffSet);
+		}
+	}
+	//otherwise, set position of cards normally
+	else
+	{
+		for (int i = 0; i < handSize; i++)
+		{
+			cardsInHand.at(i).setPosition(positionOfFirstCard.x + i*cardToCardOffSet, positionOfFirstCard.y);
+		}
+	}
+	//render the cards
 	for (int i = 0; i < handSize; ++i)
 	{
 		cardsInHand.at(i).render(gRenderer, cardSheetTexture, cardBackTexture, degrees);

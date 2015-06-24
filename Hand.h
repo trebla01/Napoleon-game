@@ -22,7 +22,7 @@ public:
 
 	void setHandSize(int s);
 	void setSelectedCardIndex(int i);
-	void setPositionOfFirstCard(SDL_Point p);
+	void setPositionOfFirstCard(int x, int y);
 
 	Cards* at(int index);
 
@@ -43,9 +43,6 @@ private:
 	
 	//-1 means no card selected
 	int selectedCardIndex;
-	
-	//card to card off set based on number of cards in your hand
-	int cardToCardOffSet;
 
 	//position for top left card
 	SDL_Point positionOfFirstCard;

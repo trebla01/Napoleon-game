@@ -37,6 +37,9 @@ private:
 
 	//points you currently have, 0-10 for tricks, 0-16 for face cards
 	int points;
+
+	//is computer player or human
+	bool isCPU;
 };
 
 #endif

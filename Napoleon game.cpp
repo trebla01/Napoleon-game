@@ -180,23 +180,18 @@ int main(int argc, char* args[])
 			opp3Hand.sort();
 			opp4Hand.sort();
 
-			////////////////////// NEEDS WORK CENTERING //////////////////
-
-			//Set card location
-			for (int i = 0; i < TOTAL_CARDS; i++)
-			{
-				yourHand.at(i)->setPosition(SCREEN_WIDTH / 4 + cardOffSet + i*yourHand.getCardToCardOffSet(), SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
-				opp1Hand.at(i)->setPosition(0 + cardOffSet + i*yourHand.getCardToCardOffSet(), cardOffSet);
-				opp2Hand.at(i)->setPosition(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet + i*yourHand.getCardToCardOffSet(), cardOffSet);
-
-				//placed vertically, cards rotated about topleft
-				opp3Hand.at(i)->setPosition(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + i*yourHand.getCardToCardOffSet());
-				opp4Hand.at(i)->setPosition(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS * yourHand.getCardToCardOffSet() - (i + 1) * yourHand.getCardToCardOffSet());
-			}
-
+			//sets the position of the cards to be displayed
+			yourHand.setPositionOfFirstCard(SCREEN_WIDTH / 4 + cardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
+			opp1Hand.setPositionOfFirstCard(cardOffSet, cardOffSet);
+			opp2Hand.setPositionOfFirstCard(SCREEN_WIDTH /2 + boardOffSet /2 + cardOffSet, cardOffSet);
+			opp3Hand.setPositionOfFirstCard(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet);
+			opp4Hand.setPositionOfFirstCard(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS * cardToCardOffSet - cardToCardOffSet);
+			
+			//sets the position of the baggage to be displayed
 			baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 			baggage[1].setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 			//////////////////////////////////////////////////////////////
+
 
 			//While application is running
 			while (!quit)
@@ -244,12 +239,14 @@ int main(int argc, char* args[])
 				SDL_SetRenderDrawColor(gRenderer, 0, 0xFF, 0xFF, 0xFF);
 				SDL_RenderFillRect(gRenderer, &opp4Field);
 
-				//Render cards
+				//Render hands
 				yourHand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				opp1Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				opp2Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				opp3Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
 				opp4Hand.render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
+
+				//render baggage
 				baggage[0].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				baggage[1].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 
