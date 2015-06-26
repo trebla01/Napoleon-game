@@ -36,8 +36,22 @@ const int cardToCardOffSet = (SCREEN_WIDTH / 2 - boardOffSet / 2 - 2 * cardOffSe
 const int onClickOffSet = 20;
 
 //Playing states
-const int FIRST_ROUND_FIRST_TURN_STATE = 0;
-const int FIRST_TURN_STATE = 1;
-const int FOLLOWING_TURN_STATE = 2;
+enum turnStateSprite
+{
+	FIRST_ROUND_FIRST_TURN_STATE = 0,
+	FIRST_TURN_STATE = 1,
+	FOLLOWING_TURN_STATE = 2,
+};
+//game state
+enum gameStateSprite
+{
+	INTRO_SCREEN = 0,
+	BIDDING_STATE = 1,
+	IN_GAME = 2,
+	GAME_OVER = 3,
+	PLAY_AGAIN_SCREEN = 4,
+	QUIT_GAME = 5,
+	TUTORIAL = 6
+};
 
 #endif

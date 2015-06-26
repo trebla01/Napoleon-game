@@ -1,12 +1,12 @@
 TO DO:
 -implement AI
--implement game
 -add in deSelecting function
 -add dialogue buttons
 -add compare between 2,3,4,5 cards
 
 FINISHED:
--rotate cards/card backs DONE
+-implement game
+-rotate cards/card backs 
 -card dealer
 -add hand class
 -better spacing for cards

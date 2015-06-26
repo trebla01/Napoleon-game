@@ -15,7 +15,7 @@ Cards::Cards()
 	facedown = true;
 	isSelected = false;
 	last = false;
-	viablePlay = true;
+	viablePlay = false;
 	mPosition.x = 0;
 	mPosition.y = 0;
 	cardCurrentSprite = CARD_SPRITE_MOUSE_OUT;
@@ -27,7 +27,7 @@ Cards::Cards(int s, int v, bool isFacingDown)
 	value = v;
 	facedown = isFacingDown;
 	isSelected = false;
-	viablePlay = true;
+	viablePlay = false;
 	last = false;
 	mPosition.x = 0;
 	mPosition.y = 0;
@@ -201,5 +201,43 @@ void Cards::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture
 			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0, 0xFF);
 			SDL_RenderDrawRect(gRenderer, &highlightRect);
 		}
+	}
+}
+
+void Cards::print()
+{
+	switch (value)
+	{
+	case 1:
+		std::cout << "Ace";
+		break;
+	case 11: 
+		std::cout << "Jack";
+		break;
+	case 12: 
+		std::cout << "Queen";
+		break;
+	case 13: 
+		std::cout << "King";
+		break;
+	default: 
+		std::cout << value;
+		break;
+	}
+	std::cout << " of ";
+	switch (suit)
+	{
+	case 0: 
+		std::cout << "Hearts";
+		break;
+	case 1: 
+		std::cout << "Spades";
+		break;
+	case 2: 
+		std::cout << "Diamonds";
+		break;
+	case 3: 
+		std::cout << "Clubs";
+		break;
 	}
 }

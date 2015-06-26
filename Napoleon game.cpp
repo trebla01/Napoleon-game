@@ -8,7 +8,6 @@
 #include "Player.h"
 #include <vector>
 #include "time.h"
-using namespace std;
 
 //Starts up SDL and creates window
 bool init();
@@ -152,19 +151,20 @@ int main(int argc, char* args[])
 		}
 		else
 		{
-			//Main loop flag
-			bool quit = false;
+			//game state flag
+			gameStateSprite gameState = BIDDING_STATE;
 
 			//Event handler
 			SDL_Event e;
 
 			//game variables
+			int bid;
 			int index; //hold temporary index for bots to randomly choose card
 			int turn = 0; //whose turn it is
 			int turnCounter = 0; //when counter == 5, means everyone has played
 			int firstSuit; //first played suit, following cards must match if possbile
-			int trumpSuit = NOSUIT; //trump suit for the game
-			int turnState = FIRST_ROUND_FIRST_TURN_STATE; //initially in the first turnstate
+			int trumpSuit = CLUBS; //trump suit for the game
+			turnStateSprite turnState = FIRST_ROUND_FIRST_TURN_STATE; //initially in the first turnstate
 			int round = 0;
 
 			//generate playing space
@@ -210,9 +210,9 @@ int main(int argc, char* args[])
 			player.at(3).setCPU(true);
 			player.at(4).setCPU(true);
 
-			player.at(0).setRole(ENEMY);
+			player.at(0).setRole(NAPOLEON);
 			player.at(1).setRole(SECETARY);
-			player.at(2).setRole(NAPOLEON);
+			player.at(2).setRole(ENEMY);
 			player.at(3).setRole(ENEMY);
 			player.at(4).setRole(ENEMY);
 
@@ -236,263 +236,383 @@ int main(int argc, char* args[])
 			baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 			baggage[1].setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 
+			///////////////////////////////  REMOVE LATER
+			//random variable to get the game shown at least once before bidding
+			int count = 0;
+
 			//While application is running
-			while (!quit)
+			while ((gameState != QUIT_GAME))
 			{
-				if (turnState == FIRST_ROUND_FIRST_TURN_STATE)
+				if (gameState == BIDDING_STATE)
 				{
-					//set Napoleon as the player who goes first
-					for (int i = 0; i < player.size(); i++)
+					if (SDL_PollEvent(&e) != 0)
 					{
-						if (player.at(i).getRole() == NAPOLEON)
+						//User requests quit
+						if (e.type == SDL_QUIT)
 						{
-							turn = i;
-							break;
+							gameState = QUIT_GAME;
 						}
 					}
-
-					turnCounter = 0;
-					player.at(turn).getHand()->setAllViable();
-
-					//if it is a human player, get their inputs
-					if (player.at(turn).isCPU() == false)
+					if (count > 0)
 					{
-						if (SDL_PollEvent(&e) != 0)
-						{
-							//User requests quit
-							if (e.type == SDL_QUIT)
-							{
-								quit = true;
-							}
-							for (int i = 0; i < TOTAL_CARDS; i++)
-							{
-								player.at(turn).getHand()->handleEvent(&e);
-							}
-							//play selected
-							if (e.type == SDL_KEYDOWN)
-							{
-								//Adjust the velocity
-								switch (e.key.keysym.sym)
-								{
-								case SDLK_SPACE:
-									if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
-									{
-										firstSuit = c.at(turn).getSuit();
-										turn++;
-										turnCounter++;
-										//if it was p4 who last played, set p0 as next player
-										if (turn == 5)
-											turn = 0;
-										turnState = FOLLOWING_TURN_STATE;
-									}
-								}
-							}
-							
-						}
-					}
 
-					//else, let AI play cards
+						cout << "What would you like to bid? (1-10)" << endl;
+						cin >> bid;
+						while (bid < 0 || bid > 10)
+						{
+							cout << "please enter a valid bid (1-10)" << endl;
+							cin >> bid;
+						}
+
+						cout << "What is the trump suit (hearts, spades, diamonds, clubs)" << endl;
+						
+						string temp;
+						cin >> temp;
+						while (temp != "hearts" && temp != "spades" && temp != "diamonds" && temp != "clubs")
+						{
+							cout << "Please enter a valid trump suit (hearts, spades, diamonds, clubs)" << endl;
+							cin >> temp;
+						}
+						if (temp == "hearts")
+							trumpSuit = HEARTS;
+						else if (temp == "spades")
+							trumpSuit = SPADES;
+						else if (temp == "diamonds")
+							trumpSuit = DIAMONDS;
+						else if (temp == "clubs")
+							trumpSuit = CLUBS;
+
+						cout << "Please start the game" << endl;
+
+						gameState = IN_GAME;
+					}
 					else
-					{
-						index = rand() % player.at(turn).getHand()->getHandSize();
-						while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
-						{
-							index = rand() % player.at(turn).getHand()->getHandSize();
-						}
-						player.at(turn).getHand()->setSelectedCardIndex(index);
-						player.at(turn).getHand()->playSelected(c.at(turn));
-						firstSuit = c.at(turn).getSuit();
-						turn++;
-						turnCounter++;
-						//if it was p4 who last played, set p0 as next player
-						if (turn == 5)
-							turn = 0;
-						turnState = FOLLOWING_TURN_STATE;
-					}
+						count++;
+
+
 				}
-				else if (turnState == FIRST_TURN_STATE)
+				else if (gameState == IN_GAME)
 				{
-
-					turnCounter = 0;
-					player.at(turn).getHand()->setAllViable();
-
-					//if it is a human player, get their inputs
-					if (player.at(turn).isCPU() == false)
+					if (turnState == FIRST_ROUND_FIRST_TURN_STATE)
 					{
-						if (SDL_PollEvent(&e) != 0)
+						//set Napoleon as the player who goes first
+						for (int i = 0; i < player.size(); i++)
 						{
-							//User requests quit
-							if (e.type == SDL_QUIT)
+							if (player.at(i).getRole() == NAPOLEON)
 							{
-								quit = true;
+								turn = i;
+								break;
 							}
-							for (int i = 0; i < TOTAL_CARDS; i++)
+						}
+
+						turnCounter = 0;
+						player.at(turn).getHand()->setAllViable();
+
+						//if it is a human player, get their inputs
+						if (player.at(turn).isCPU() == false)
+						{
+							if (SDL_PollEvent(&e) != 0)
 							{
-								player.at(turn).getHand()->handleEvent(&e);
-							}
-							//play selected
-							if (e.type == SDL_KEYDOWN)
-							{
-								//Adjust the velocity
-								switch (e.key.keysym.sym)
+								//User requests quit
+								if (e.type == SDL_QUIT)
 								{
-								case SDLK_SPACE:
-									if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
-									{
-										firstSuit = c.at(turn).getSuit();
-										turn++;
-										turnCounter++;
-										//if it was p4 who last played, set p0 as next player
-										if (turn == 5)
-											turn = 0;
-										turnState = FOLLOWING_TURN_STATE;
-									}
+									gameState = QUIT_GAME;
 								}
-							}
-
-						}
-					}
-
-					//else, let AI play cards
-					else
-					{
-						index = rand() % player.at(turn).getHand()->getHandSize();
-						while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
-						{
-							index = rand() % player.at(turn).getHand()->getHandSize();
-						}
-						player.at(turn).getHand()->setSelectedCardIndex(index);
-						player.at(turn).getHand()->playSelected(c.at(turn));
-						firstSuit = c.at(turn).getSuit();
-						turn++;
-						turnCounter++;
-						//if it was p4 who last played, set p0 as next player
-						if (turn == 5)
-							turn = 0;
-						turnState = FOLLOWING_TURN_STATE;
-					}
-				}
-				else if (turnState == FOLLOWING_TURN_STATE)
-				{
-					player.at(turn).getHand()->findViablePlay(firstSuit);
-					
-					//if it is a human player, get their inputs
-					if (player.at(turn).isCPU() == false)
-					{
-						if (SDL_PollEvent(&e) != 0)
-						{
-							//User requests quit
-							if (e.type == SDL_QUIT)
-							{
-								quit = true;
-							}
-							for (int i = 0; i < TOTAL_CARDS; i++)
-							{
-								player.at(turn).getHand()->handleEvent(&e);
-							}
-							//play selected
-							if (e.type == SDL_KEYDOWN)
-							{
-								//Adjust the velocity
-								switch (e.key.keysym.sym)
+								for (int i = 0; i < TOTAL_CARDS; i++)
 								{
-								case SDLK_SPACE:
-									if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
+									player.at(turn).getHand()->handleEvent(&e);
+								}
+								//play selected
+								if (e.type == SDL_KEYDOWN)
+								{
+									//Adjust the velocity
+									switch (e.key.keysym.sym)
 									{
-										turn++;
-										turnCounter++;
-										//if everyone has played, determine winner and move to the next round
-										if (turnCounter == 5)
+									case SDLK_SPACE:
+										if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
 										{
-											round++;
-											Cards roundWinner = determineWinner(c.at(0), c.at(1), c.at(2), c.at(3), c.at(4), firstSuit, trumpSuit);
-											
-											//give the player with the winning card a point and let them go first in the next round
-											for (int i = 0; i < player.size(); i++)
-											{
-												if (roundWinner.getSuit() == c.at(i).getSuit() && roundWinner.getValue() == c.at(i).getValue())
-												{
-													player.at(i).setPoints(player.at(i).getPoints() + 1);
-													turn = i;
-												}
-											}
-
+											firstSuit = c.at(turn).getSuit();
+											cout << "Player " << turn << ": ";
+											c.at(turn).print();
 											cout << endl;
-											cout << "Round " << round << ": " << endl;
-											cout << "Player 0: " << player.at(0).getPoints() << endl;
-											cout << "Player 1: " << player.at(1).getPoints() << endl;
-											cout << "Player 2: " << player.at(2).getPoints() << endl;
-											cout << "Player 3: " << player.at(3).getPoints() << endl;
-											cout << "Player 4: " << player.at(4).getPoints() << endl;
-
-											turnState = FIRST_TURN_STATE;
-
-										}
-
-										//if not everyone has played yet, let everyone play
-										else
-										{
+											turn++;
+											turnCounter++;
 											//if it was p4 who last played, set p0 as next player
 											if (turn == 5)
 												turn = 0;
 											turnState = FOLLOWING_TURN_STATE;
 										}
+										break;
 									}
 								}
+
 							}
-
-						}
-					}
-
-					//else, let AI play cards
-					else
-					{
-						index = rand() % player.at(turn).getHand()->getHandSize();
-						while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
-						{
-							index = rand() % player.at(turn).getHand()->getHandSize();
-						}
-						player.at(turn).getHand()->setSelectedCardIndex(index);
-						player.at(turn).getHand()->playSelected(c.at(turn));
-						
-						turn++;
-						turnCounter++;
-
-						//if everyone has played, determine winner and move to the next round
-						if (turnCounter == 5)
-						{
-							round++;
-							Cards roundWinner = determineWinner(c.at(0), c.at(1), c.at(2), c.at(3), c.at(4), firstSuit, trumpSuit);
-
-							//give the player with the winning card a point and let them go first in the next round
-							for (int i = 0; i < player.size(); i++)
-							{
-								if (roundWinner.getSuit() == c.at(i).getSuit() && roundWinner.getValue() == c.at(i).getValue())
-								{
-									player.at(i).setPoints(player.at(i).getPoints() + 1);
-									turn = i;
-								}
-							}
-
-							cout << endl;
-							cout << "Round " << round << ": " << endl;
-							cout << "Player 0: " << player.at(0).getPoints() << endl;
-							cout << "Player 1: " << player.at(1).getPoints() << endl;
-							cout << "Player 2: " << player.at(2).getPoints() << endl;
-							cout << "Player 3: " << player.at(3).getPoints() << endl;
-							cout << "Player 4: " << player.at(4).getPoints() << endl;
-
-							turnState = FIRST_TURN_STATE;
-
 						}
 
-						//if not everyone has played yet, let everyone play 
+						//else, let AI play cards
 						else
 						{
+							index = rand() % player.at(turn).getHand()->getHandSize();
+							while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
+							{
+								index = rand() % player.at(turn).getHand()->getHandSize();
+							}
+							player.at(turn).getHand()->setSelectedCardIndex(index);
+							player.at(turn).getHand()->playSelected(c.at(turn));
+							firstSuit = c.at(turn).getSuit();
+							cout << "Player " << turn << ": ";
+							c.at(turn).print();
+							cout << endl;
+							turn++;
+							turnCounter++;
 							//if it was p4 who last played, set p0 as next player
 							if (turn == 5)
 								turn = 0;
 							turnState = FOLLOWING_TURN_STATE;
+						}
+					}
+					else if (turnState == FIRST_TURN_STATE)
+					{
+
+						turnCounter = 0;
+						player.at(turn).getHand()->setAllViable();
+
+						//if it is a human player, get their inputs
+						if (player.at(turn).isCPU() == false)
+						{
+							if (SDL_PollEvent(&e) != 0)
+							{
+								//User requests quit
+								if (e.type == SDL_QUIT)
+								{
+									gameState = QUIT_GAME;
+								}
+								for (int i = 0; i < TOTAL_CARDS; i++)
+								{
+									player.at(turn).getHand()->handleEvent(&e);
+								}
+								//play selected
+								if (e.type == SDL_KEYDOWN)
+								{
+									//Adjust the velocity
+									switch (e.key.keysym.sym)
+									{
+									case SDLK_SPACE:
+										if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
+										{
+											firstSuit = c.at(turn).getSuit();
+											cout << "Player " << turn << ": ";
+											c.at(turn).print();
+											cout << endl;
+											turn++;
+											turnCounter++;
+											//if it was p4 who last played, set p0 as next player
+											if (turn == 5)
+												turn = 0;
+											turnState = FOLLOWING_TURN_STATE;
+										}
+										break;
+									}
+								}
+
+							}
+						}
+
+						//else, let AI play cards
+						else
+						{
+							index = rand() % player.at(turn).getHand()->getHandSize();
+							while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
+							{
+								index = rand() % player.at(turn).getHand()->getHandSize();
+							}
+							player.at(turn).getHand()->setSelectedCardIndex(index);
+							player.at(turn).getHand()->playSelected(c.at(turn));
+							firstSuit = c.at(turn).getSuit();
+							cout << "Player " << turn << ": ";
+							c.at(turn).print();
+							cout << endl;
+							turn++;
+							turnCounter++;
+							//if it was p4 who last played, set p0 as next player
+							if (turn == 5)
+								turn = 0;
+							turnState = FOLLOWING_TURN_STATE;
+						}
+					}
+					else if (turnState == FOLLOWING_TURN_STATE)
+					{
+						player.at(turn).getHand()->findViablePlay(firstSuit);
+
+						//if it is a human player, get their inputs
+						if (player.at(turn).isCPU() == false)
+						{
+							if (SDL_PollEvent(&e) != 0)
+							{
+								//User requests quit
+								if (e.type == SDL_QUIT)
+								{
+									gameState = QUIT_GAME;
+								}
+								for (int i = 0; i < TOTAL_CARDS; i++)
+								{
+									player.at(turn).getHand()->handleEvent(&e);
+								}
+								//play selected
+								if (e.type == SDL_KEYDOWN)
+								{
+									//Adjust the velocity
+									switch (e.key.keysym.sym)
+									{
+									case SDLK_SPACE:
+										if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
+										{
+											cout << "Player " << turn << ": ";
+											c.at(turn).print();
+											cout << endl;
+											turn++;
+											turnCounter++;
+											//if everyone has played, determine winner and move to the next round
+											if (turnCounter == 5)
+											{
+												round++;
+												Cards roundWinner = determineWinner(c.at(0), c.at(1), c.at(2), c.at(3), c.at(4), firstSuit, trumpSuit);
+
+												//give the player with the winning card a point and let them go first in the next round
+												for (int i = 0; i < player.size(); i++)
+												{
+													if (roundWinner.getSuit() == c.at(i).getSuit() && roundWinner.getValue() == c.at(i).getValue())
+													{
+														player.at(i).setPoints(player.at(i).getPoints() + 1);
+														turn = i;
+													}
+												}
+
+												cout << "Round " << round << ": " << endl;
+												cout << "Player 0: " << player.at(0).getPoints() << endl;
+												cout << "Player 1: " << player.at(1).getPoints() << endl;
+												cout << "Player 2: " << player.at(2).getPoints() << endl;
+												cout << "Player 3: " << player.at(3).getPoints() << endl;
+												cout << "Player 4: " << player.at(4).getPoints() << endl;
+
+												if (round == 10)
+													gameState = GAME_OVER;
+												else
+													turnState = FIRST_TURN_STATE;
+
+											}
+
+											//if not everyone has played yet, let everyone play
+											else
+											{
+												//if it was p4 who last played, set p0 as next player
+												if (turn == 5)
+													turn = 0;
+												turnState = FOLLOWING_TURN_STATE;
+											}
+										}
+										break;
+									}
+								}
+
+							}
+						}
+
+						//else, let AI play cards
+						else
+						{
+							index = rand() % player.at(turn).getHand()->getHandSize();
+							while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
+							{
+								index = rand() % player.at(turn).getHand()->getHandSize();
+							}
+							player.at(turn).getHand()->setSelectedCardIndex(index);
+							player.at(turn).getHand()->playSelected(c.at(turn));
+							cout << "Player " << turn << ": ";
+							c.at(turn).print();
+							cout << endl;
+							turn++;
+							turnCounter++;
+
+							//if everyone has played, determine winner and move to the next round
+							if (turnCounter == 5)
+							{
+								round++;
+								Cards roundWinner = determineWinner(c.at(0), c.at(1), c.at(2), c.at(3), c.at(4), firstSuit, trumpSuit);
+
+								//give the player with the winning card a point and let them go first in the next round
+								for (int i = 0; i < player.size(); i++)
+								{
+									if (roundWinner.getSuit() == c.at(i).getSuit() && roundWinner.getValue() == c.at(i).getValue())
+									{
+										player.at(i).setPoints(player.at(i).getPoints() + 1);
+										turn = i;
+									}
+								}
+
+								cout << "Round " << round << ": " << endl;
+								cout << "Player 0: " << player.at(0).getPoints() << endl;
+								cout << "Player 1: " << player.at(1).getPoints() << endl;
+								cout << "Player 2: " << player.at(2).getPoints() << endl;
+								cout << "Player 3: " << player.at(3).getPoints() << endl;
+								cout << "Player 4: " << player.at(4).getPoints() << endl;
+
+								if (round == 10)
+									gameState = GAME_OVER;
+								else
+									turnState = FIRST_TURN_STATE;
+
+							}
+
+							//if not everyone has played yet, let everyone play 
+							else
+							{
+								//if it was p4 who last played, set p0 as next player
+								if (turn == 5)
+									turn = 0;
+								turnState = FOLLOWING_TURN_STATE;
+							}
+						}
+					}
+				}
+				else if (gameState == GAME_OVER)
+				{
+					if (SDL_PollEvent(&e) != 0)
+					{
+						//User requests quit
+						if (e.type == SDL_QUIT)
+						{
+							gameState = QUIT_GAME;
+						}
+					}
+
+					//Add up Napoleon and Secetary's points
+					int napPoints = 0;
+					for (int i = 0; i < player.size(); i++)
+					{
+						if (player.at(i).getRole() == NAPOLEON || player.at(i).getRole() == SECETARY)
+						{
+							napPoints += player.at(i).getPoints();
+						}
+					}
+					cout << "Napoleon and Secetary got " << napPoints << " points!" << endl;
+					if (napPoints >= bid)
+					{
+						cout << "Napoleon and Secetary wins!" << endl;
+					}
+					else
+						cout << "Enemies win!" << endl;
+					gameState = PLAY_AGAIN_SCREEN;
+				}
+
+				else if (gameState == PLAY_AGAIN_SCREEN)
+				{
+					if (SDL_PollEvent(&e) != 0)
+					{
+						//User requests quit
+						if (e.type == SDL_QUIT)
+						{
+							gameState = QUIT_GAME;
 						}
 					}
 				}

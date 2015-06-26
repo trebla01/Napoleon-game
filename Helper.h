@@ -39,7 +39,7 @@ Cards determineWinner(Cards c1, Cards c2, Cards c3, Cards c4, Cards c5, int firs
 		if (trumpCards.size() > 0)
 		{
 			Cards biggest = trumpCards.at(0);
-			for (int i = 1; i < trumpCards.size(); i++)
+			for (int i = 0; i < trumpCards.size(); i++)
 			{
 				//if ace in trumps, automatically select as winner
 				if (trumpCards.at(i).getValue() == 1)
