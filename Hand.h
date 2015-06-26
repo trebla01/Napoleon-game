@@ -36,7 +36,7 @@ public:
 	void setAllViable();
 
 	//play selected card, returns true if card was played, returns false otherwise
-	bool playSelected();
+	bool playSelected(Cards& c);
 
 	//Handles mouse event
 	void handleEvent(SDL_Event* e);

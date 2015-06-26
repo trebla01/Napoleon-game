@@ -28,13 +28,6 @@ public:
 	void setCPU(bool c);
 	void setHand(Hand h);
 
-	//first player's turn, return the suit of the played card
-	int firstPlayerTurn();
-	
-	//all turns but the first player's
-	void takeTurn( int firstPlayedSuit);
-
-
 
 private:
 	//your hand

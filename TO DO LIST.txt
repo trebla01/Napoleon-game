@@ -1,13 +1,15 @@
 TO DO:
--better spacing for cards
--determine what mouseover/mousedown/mouseup does
+-implement AI
+-implement game
 -add in deSelecting function
--change all sources of ALL_CARDS to hand.getHandSize()
--add in Hand.render
 -add dialogue buttons
-
+-add compare between 2,3,4,5 cards
 
 FINISHED:
 -rotate cards/card backs DONE
 -card dealer
 -add hand class
+-better spacing for cards
+-determine what mouseover/mousedown/mouseup does
+-change all sources of ALL_CARDS to hand.getHandSize()
+-add in Hand.render

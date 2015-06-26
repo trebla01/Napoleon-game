@@ -100,16 +100,18 @@ void Hand::sort()
 
 void Hand::findViablePlay(int suit)
 {
-	vector <int> firstSuitCardsIndex;
+	bool hasSuit = false;
+
 	for (int i = 0; i < handSize; i++)
 	{
 		if (cardsInHand.at(i).getSuit() == suit)
 		{
-			firstSuitCardsIndex.push_back(i);
+			hasSuit = true;
 		}
 	}
 
-	if (firstSuitCardsIndex.size() == 0)
+	//if you don't have a single card of that suit, set all cards to viable
+	if (hasSuit == false)
 	{
 		//set all cards to viable if you're out of the suit
 		for (int i = 0; i < handSize; i++)
@@ -117,21 +119,16 @@ void Hand::findViablePlay(int suit)
 			cardsInHand.at(i).setViablePlay(true);
 		}
 	}
-	//if you have the suit, you must play the suit
 	else
 	{
 		for (int i = 0; i < handSize; i++)
 		{
-			if (i == firstSuitCardsIndex.at(0))
-			{
+			if (cardsInHand.at(i).getSuit() == suit)
 				cardsInHand.at(i).setViablePlay(true);
-				firstSuitCardsIndex.erase(firstSuitCardsIndex.begin());
-			}
 			else
 				cardsInHand.at(i).setViablePlay(false);
 		}
 	}
-
 }
 
 void Hand::setAllViable()
@@ -143,22 +140,23 @@ void Hand::setAllViable()
 }
 
 //play selected card
-bool Hand::playSelected()
+bool Hand::playSelected(Cards& c)
 {
+	if (selectedCardIndex == -1)
+	{
+		cout << "Please select a card!" << endl;
+		return false;
+	}
 	if (cardsInHand.at(selectedCardIndex).isViablePlay() == false)
 	{
 		cout << "Please follow first played suit!" << endl;
 		return false;
 	}
 	
-	if (selectedCardIndex == -1)
-	{
-		cout << "Please select a card!" << endl;
-		return false;
-	}
 
 	else
 	{
+		c = cardsInHand.at(selectedCardIndex);
 		cardsInHand.erase(cardsInHand.begin() + selectedCardIndex);
 		selectedCardIndex = -1;
 		handSize--;

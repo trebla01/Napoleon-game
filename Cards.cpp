@@ -189,9 +189,9 @@ void Cards::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture
 			cardSheetTexture->render(gRenderer, mPosition.x, mPosition.y, &getCardRect, degrees, &rotationPoint);
 
 		}
-		/*
+		
 		//highlight cards that are viable plays
-		if (viablePlay == true)
+		if (viablePlay == true && !isSelected)
 		{
 			SDL_Rect highlightRect;
 			if (last == true)
@@ -200,6 +200,6 @@ void Cards::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture
 				highlightRect = { mPosition.x, mPosition.y, cardToCardOffSet, CARD_HEIGHT };
 			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0, 0xFF);
 			SDL_RenderDrawRect(gRenderer, &highlightRect);
-		}*/
+		}
 	}
 }

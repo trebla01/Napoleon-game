@@ -7,6 +7,7 @@
 #include "Hand.h"
 #include "Player.h"
 #include <vector>
+#include "time.h"
 using namespace std;
 
 //Starts up SDL and creates window
@@ -37,11 +38,16 @@ vector<Cards> opp4Cards;
 vector<Cards> baggage;
 
 //Players
+vector<Player> player;
+
+Player p0;
 Player p1;
 Player p2;
 Player p3;
 Player p4;
-Player p5;
+
+//the cards each player plays each turn;
+vector<Cards> c(5);
 
 bool init()
 {
@@ -104,7 +110,7 @@ bool loadMedia()
 
 	//Load sprites
 	if (!cardSheetTexture.loadFromFile("Napoleon game/poker.cards.png", gRenderer) ||
-		!cardBackTexture.loadFromFile("Napoleon game/card_back.png", gRenderer))
+		!cardBackTexture.loadFromFile("Napoleon game/card_back_flowers.png", gRenderer))
 	{
 		printf("Failed to load sprite texture!\n");
 		success = false;
@@ -152,6 +158,15 @@ int main(int argc, char* args[])
 			//Event handler
 			SDL_Event e;
 
+			//game variables
+			int index; //hold temporary index for bots to randomly choose card
+			int turn = 0; //whose turn it is
+			int turnCounter = 0; //when counter == 5, means everyone has played
+			int firstSuit; //first played suit, following cards must match if possbile
+			int trumpSuit = NOSUIT; //trump suit for the game
+			int turnState = FIRST_ROUND_FIRST_TURN_STATE; //initially in the first turnstate
+			int round = 0;
+
 			//generate playing space
 			SDL_Rect yourField = { SCREEN_WIDTH / 4 + boardOffSet/4, SCREEN_HEIGHT - CARD_HEIGHT - 2*cardOffSet, SCREEN_WIDTH / 2 - boardOffSet/4, CARD_HEIGHT + 2*cardOffSet };
 			SDL_Rect opp1Field = { 0, 0, SCREEN_WIDTH / 2 - boardOffSet/2, CARD_HEIGHT + 2 * cardOffSet };
@@ -163,84 +178,321 @@ int main(int argc, char* args[])
 			d.shuffle();
 			d.deal(&yourCards, &opp1Cards, &opp2Cards, &opp3Cards, &opp4Cards, &baggage);
 
-			//set p1 as human
-			p1.setCPU(false);
-
-			//set p2,p3,p4,p5 as CPUs
-			p2.setCPU(true);
-			p3.setCPU(true);
-			p4.setCPU(true);
-			p5.setCPU(true);
-
 			//put everyone's cards in their hands
 			//your hand is shown
-			p1 = Player(Hand(yourCards, false));
+			p0 = Player(Hand(yourCards, false));
 
 			//opponent's hand is hidden
-			p2 = Player(Hand(opp1Cards, true));
-			p3 = Player(Hand(opp2Cards, true));
-			p4 = Player(Hand(opp3Cards, true));
-			p5 = Player(Hand(opp4Cards, true));
+			p1 = Player(Hand(opp1Cards, true));
+			p2 = Player(Hand(opp2Cards, true));
+			p3 = Player(Hand(opp3Cards, true));
+			p4 = Player(Hand(opp4Cards, true));
 
-			p1.getHand()->sort();
-			p2.getHand()->sort();
-			p3.getHand()->sort();
-			p4.getHand()->sort();
-			p5.getHand()->sort();
+			//add the players into a player vector array
+			player.push_back(p0);
+			player.push_back(p1);
+			player.push_back(p2);
+			player.push_back(p3);
+			player.push_back(p4);
+
+			player.at(0).getHand()->sort();
+			player.at(1).getHand()->sort();
+			player.at(2).getHand()->sort();
+			player.at(3).getHand()->sort();
+			player.at(4).getHand()->sort();
+
+			//set p0 as human
+			player.at(0).setCPU(false);
+
+			//set p1,p2,p3,p4 as CPUs
+			player.at(1).setCPU(true);
+			player.at(2).setCPU(true);
+			player.at(3).setCPU(true);
+			player.at(4).setCPU(true);
+
+			player.at(0).setRole(ENEMY);
+			player.at(1).setRole(SECETARY);
+			player.at(2).setRole(NAPOLEON);
+			player.at(3).setRole(ENEMY);
+			player.at(4).setRole(ENEMY);
 
 			//sets the position of the cards to be displayed
+			//bottom is p0
+			player.at(0).getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 4 + cardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
 			
-			//bottom is p1
-			p1.getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 4 + cardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
+			//top left is p2
+			player.at(2).getHand()->setPositionOfFirstCard(cardOffSet, cardOffSet);
 			
-			//top left is p3
-			p3.getHand()->setPositionOfFirstCard(cardOffSet, cardOffSet);
+			//top right is p3
+			player.at(3).getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet, cardOffSet);
 			
-			//top right is p4
-			p4.getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet, cardOffSet);
+			//bottom left is p1
+			player.at(1).getHand()->setPositionOfFirstCard(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet);
 			
-			//bottom left is p2
-			p2.getHand()->setPositionOfFirstCard(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet);
-			
-			//bottom right is p5
-			p5.getHand()->setPositionOfFirstCard(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS * cardToCardOffSet - cardToCardOffSet);
+			//bottom right is p4
+			player.at(4).getHand()->setPositionOfFirstCard(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS * cardToCardOffSet - cardToCardOffSet);
 			
 			//sets the position of the baggage to be displayed
 			baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 			baggage[1].setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 
-			int turn = 0;
-			int firstSuit;
-
 			//While application is running
 			while (!quit)
 			{
-				//Handle events on queue
-				while (SDL_PollEvent(&e) != 0)
+				if (turnState == FIRST_ROUND_FIRST_TURN_STATE)
 				{
-					//User requests quit
-					if (e.type == SDL_QUIT)
+					//set Napoleon as the player who goes first
+					for (int i = 0; i < player.size(); i++)
 					{
-						quit = true;
-					}
-					
-					
-					//Handle card events
-					for (int i = 0; i < TOTAL_CARDS; ++i)
-					{
-						//yourHand.handleEvent(&e);
-						p1.getHand()->handleEvent(&e);
+						if (player.at(i).getRole() == NAPOLEON)
+						{
+							turn = i;
+							break;
+						}
 					}
 
-					//play selected
-					if (e.type == SDL_KEYDOWN)
+					turnCounter = 0;
+					player.at(turn).getHand()->setAllViable();
+
+					//if it is a human player, get their inputs
+					if (player.at(turn).isCPU() == false)
 					{
-						//Adjust the velocity
-						switch (e.key.keysym.sym)
+						if (SDL_PollEvent(&e) != 0)
 						{
-							case SDLK_SPACE:
-								//yourHand.playSelected();
-								p1.getHand()->playSelected();
+							//User requests quit
+							if (e.type == SDL_QUIT)
+							{
+								quit = true;
+							}
+							for (int i = 0; i < TOTAL_CARDS; i++)
+							{
+								player.at(turn).getHand()->handleEvent(&e);
+							}
+							//play selected
+							if (e.type == SDL_KEYDOWN)
+							{
+								//Adjust the velocity
+								switch (e.key.keysym.sym)
+								{
+								case SDLK_SPACE:
+									if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
+									{
+										firstSuit = c.at(turn).getSuit();
+										turn++;
+										turnCounter++;
+										//if it was p4 who last played, set p0 as next player
+										if (turn == 5)
+											turn = 0;
+										turnState = FOLLOWING_TURN_STATE;
+									}
+								}
+							}
+							
+						}
+					}
+
+					//else, let AI play cards
+					else
+					{
+						index = rand() % player.at(turn).getHand()->getHandSize();
+						while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
+						{
+							index = rand() % player.at(turn).getHand()->getHandSize();
+						}
+						player.at(turn).getHand()->setSelectedCardIndex(index);
+						player.at(turn).getHand()->playSelected(c.at(turn));
+						firstSuit = c.at(turn).getSuit();
+						turn++;
+						turnCounter++;
+						//if it was p4 who last played, set p0 as next player
+						if (turn == 5)
+							turn = 0;
+						turnState = FOLLOWING_TURN_STATE;
+					}
+				}
+				else if (turnState == FIRST_TURN_STATE)
+				{
+
+					turnCounter = 0;
+					player.at(turn).getHand()->setAllViable();
+
+					//if it is a human player, get their inputs
+					if (player.at(turn).isCPU() == false)
+					{
+						if (SDL_PollEvent(&e) != 0)
+						{
+							//User requests quit
+							if (e.type == SDL_QUIT)
+							{
+								quit = true;
+							}
+							for (int i = 0; i < TOTAL_CARDS; i++)
+							{
+								player.at(turn).getHand()->handleEvent(&e);
+							}
+							//play selected
+							if (e.type == SDL_KEYDOWN)
+							{
+								//Adjust the velocity
+								switch (e.key.keysym.sym)
+								{
+								case SDLK_SPACE:
+									if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
+									{
+										firstSuit = c.at(turn).getSuit();
+										turn++;
+										turnCounter++;
+										//if it was p4 who last played, set p0 as next player
+										if (turn == 5)
+											turn = 0;
+										turnState = FOLLOWING_TURN_STATE;
+									}
+								}
+							}
+
+						}
+					}
+
+					//else, let AI play cards
+					else
+					{
+						index = rand() % player.at(turn).getHand()->getHandSize();
+						while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
+						{
+							index = rand() % player.at(turn).getHand()->getHandSize();
+						}
+						player.at(turn).getHand()->setSelectedCardIndex(index);
+						player.at(turn).getHand()->playSelected(c.at(turn));
+						firstSuit = c.at(turn).getSuit();
+						turn++;
+						turnCounter++;
+						//if it was p4 who last played, set p0 as next player
+						if (turn == 5)
+							turn = 0;
+						turnState = FOLLOWING_TURN_STATE;
+					}
+				}
+				else if (turnState == FOLLOWING_TURN_STATE)
+				{
+					player.at(turn).getHand()->findViablePlay(firstSuit);
+					
+					//if it is a human player, get their inputs
+					if (player.at(turn).isCPU() == false)
+					{
+						if (SDL_PollEvent(&e) != 0)
+						{
+							//User requests quit
+							if (e.type == SDL_QUIT)
+							{
+								quit = true;
+							}
+							for (int i = 0; i < TOTAL_CARDS; i++)
+							{
+								player.at(turn).getHand()->handleEvent(&e);
+							}
+							//play selected
+							if (e.type == SDL_KEYDOWN)
+							{
+								//Adjust the velocity
+								switch (e.key.keysym.sym)
+								{
+								case SDLK_SPACE:
+									if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
+									{
+										turn++;
+										turnCounter++;
+										//if everyone has played, determine winner and move to the next round
+										if (turnCounter == 5)
+										{
+											round++;
+											Cards roundWinner = determineWinner(c.at(0), c.at(1), c.at(2), c.at(3), c.at(4), firstSuit, trumpSuit);
+											
+											//give the player with the winning card a point and let them go first in the next round
+											for (int i = 0; i < player.size(); i++)
+											{
+												if (roundWinner.getSuit() == c.at(i).getSuit() && roundWinner.getValue() == c.at(i).getValue())
+												{
+													player.at(i).setPoints(player.at(i).getPoints() + 1);
+													turn = i;
+												}
+											}
+
+											cout << endl;
+											cout << "Round " << round << ": " << endl;
+											cout << "Player 0: " << player.at(0).getPoints() << endl;
+											cout << "Player 1: " << player.at(1).getPoints() << endl;
+											cout << "Player 2: " << player.at(2).getPoints() << endl;
+											cout << "Player 3: " << player.at(3).getPoints() << endl;
+											cout << "Player 4: " << player.at(4).getPoints() << endl;
+
+											turnState = FIRST_TURN_STATE;
+
+										}
+
+										//if not everyone has played yet, let everyone play
+										else
+										{
+											//if it was p4 who last played, set p0 as next player
+											if (turn == 5)
+												turn = 0;
+											turnState = FOLLOWING_TURN_STATE;
+										}
+									}
+								}
+							}
+
+						}
+					}
+
+					//else, let AI play cards
+					else
+					{
+						index = rand() % player.at(turn).getHand()->getHandSize();
+						while (player.at(turn).getHand()->at(index)->isViablePlay() == false)
+						{
+							index = rand() % player.at(turn).getHand()->getHandSize();
+						}
+						player.at(turn).getHand()->setSelectedCardIndex(index);
+						player.at(turn).getHand()->playSelected(c.at(turn));
+						
+						turn++;
+						turnCounter++;
+
+						//if everyone has played, determine winner and move to the next round
+						if (turnCounter == 5)
+						{
+							round++;
+							Cards roundWinner = determineWinner(c.at(0), c.at(1), c.at(2), c.at(3), c.at(4), firstSuit, trumpSuit);
+
+							//give the player with the winning card a point and let them go first in the next round
+							for (int i = 0; i < player.size(); i++)
+							{
+								if (roundWinner.getSuit() == c.at(i).getSuit() && roundWinner.getValue() == c.at(i).getValue())
+								{
+									player.at(i).setPoints(player.at(i).getPoints() + 1);
+									turn = i;
+								}
+							}
+
+							cout << endl;
+							cout << "Round " << round << ": " << endl;
+							cout << "Player 0: " << player.at(0).getPoints() << endl;
+							cout << "Player 1: " << player.at(1).getPoints() << endl;
+							cout << "Player 2: " << player.at(2).getPoints() << endl;
+							cout << "Player 3: " << player.at(3).getPoints() << endl;
+							cout << "Player 4: " << player.at(4).getPoints() << endl;
+
+							turnState = FIRST_TURN_STATE;
+
+						}
+
+						//if not everyone has played yet, let everyone play 
+						else
+						{
+							//if it was p4 who last played, set p0 as next player
+							if (turn == 5)
+								turn = 0;
+							turnState = FOLLOWING_TURN_STATE;
 						}
 					}
 				}
@@ -262,21 +514,21 @@ int main(int argc, char* args[])
 				SDL_RenderFillRect(gRenderer, &opp4Field);
 
 				//Render hands
-				p1.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-				p2.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
-				p3.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-				p4.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-				p5.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
+				player.at(0).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				player.at(1).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
+				player.at(2).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				player.at(3).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				player.at(4).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
 
 				//render baggage
 				baggage[0].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				baggage[1].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 
 				//render hovered cards fully
-				for (int i = 0; i < p1.getHand()->getHandSize(); i++)
+				for (int i = 0; i < player.at(0).getHand()->getHandSize(); i++)
 				{
-					if (p1.getHand()->at(i)->getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION)
-						p1.getHand()->at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+					if (player.at(0).getHand()->at(i)->getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION)
+						player.at(0).getHand()->at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				}
 
 				//Update screen
