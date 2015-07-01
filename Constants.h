@@ -12,7 +12,7 @@ enum LCardSprite
 };
 
 const int NAPOLEON = 0;
-const int SECETARY = 1;
+const int SECRETARY = 1;
 const int ENEMY = 2;
 
 //Screen dimension constants
@@ -27,12 +27,13 @@ const int CLUBS = 3;
 const int NOSUIT = 4;
 
 //Card constants
-const int CARD_WIDTH = 165; 
-const int CARD_HEIGHT = 232;
+const int CARD_WIDTH = 125; //165
+const int CARD_HEIGHT = 175; //232
 const int TOTAL_CARDS = 10;
 const int cardOffSet = 10;
-const int boardOffSet = 4;
-const int cardToCardOffSet = (SCREEN_WIDTH / 2 - boardOffSet / 2 - 2 * cardOffSet - CARD_WIDTH) / (TOTAL_CARDS - 1);
+const int boardOffSet = 194;
+const int cardToCardOffSet = 30;
+const int playedCardOffSet = 125;
 const int onClickOffSet = 20;
 
 //Playing states
@@ -47,11 +48,15 @@ enum gameStateSprite
 {
 	INTRO_SCREEN = 0,
 	BIDDING_STATE = 1,
-	IN_GAME = 2,
-	GAME_OVER = 3,
-	PLAY_AGAIN_SCREEN = 4,
-	QUIT_GAME = 5,
-	TUTORIAL = 6
+	NAPOLEON_CHOOSE_TRUMP = 2,
+	NAPOLEON_DEAL_BAGGAGE = 3,
+	NAPOLEON_CHOOSE_SEC = 4,
+	IN_GAME = 5,
+	GAME_OVER = 6,
+	PLAY_AGAIN_SCREEN = 7,
+	QUIT_GAME = 8,
+	TUTORIAL = 9
 };
+
 
 #endif

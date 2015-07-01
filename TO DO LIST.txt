@@ -3,6 +3,7 @@ TO DO:
 -add in deSelecting function
 -add dialogue buttons
 -add compare between 2,3,4,5 cards
+-redesign card placements
 
 FINISHED:
 -implement game

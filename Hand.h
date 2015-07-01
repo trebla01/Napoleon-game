@@ -29,6 +29,9 @@ public:
 	//sorted by hearts, spades, diamonds, clubs
 	void sort();
 
+	//deselect all cards
+	void deselectAll();
+
 	//find only the viable plays based on the suit of first card played
 	void findViablePlay(int suit);
 

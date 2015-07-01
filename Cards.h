@@ -21,6 +21,12 @@ public:
 	//sets suit, value, and whether it's revealed or not
 	void setCard(int s, int v, bool isFacingDown);
 
+	//sets facedown
+	void setFacedown(bool f);
+
+	//sets hidden
+	void setHidden(bool h);
+
 	//sets selected card to be true or false
 	void setSelected(bool s);
 
@@ -33,12 +39,13 @@ public:
 	int getSuit();
 	int getValue();
 	bool getIsSelected();
+	bool getHidden();
 	bool isLast();
 	bool isViablePlay();
 	LCardSprite getCardSprite();
 
 	//Handles mouse event
-	void handleEvent(SDL_Event* e, int cardToCardOffSet);
+	void handleEvent(SDL_Event* e);
 
 	//Shows card
 	void render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture* cardBackTexture, int degrees);
@@ -53,8 +60,11 @@ private:
 	//1-13, ace = 1, king = 13
 	int value;
 
-	//hidden or not
+	//facedown or not
 	bool facedown;
+
+	//sets whether it's invisible
+	bool hidden;
 
 	//last card or not
 	bool last;

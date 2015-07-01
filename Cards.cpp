@@ -13,6 +13,7 @@ Cards::Cards()
 	suit = CLUBS;
 	value = 1;
 	facedown = true;
+	hidden = false;
 	isSelected = false;
 	last = false;
 	viablePlay = false;
@@ -26,6 +27,7 @@ Cards::Cards(int s, int v, bool isFacingDown)
 	suit = s;
 	value = v;
 	facedown = isFacingDown;
+	hidden = false;
 	isSelected = false;
 	viablePlay = false;
 	last = false;
@@ -54,6 +56,14 @@ void Cards::setCard(int s, int v, bool isFacingDown)
 	value = v;
 	facedown = isFacingDown;
 }
+void Cards::setFacedown(bool f)
+{
+	facedown = f;
+}
+void Cards::setHidden(bool h)
+{
+	hidden = h;
+}
 void Cards::setSelected(bool s)
 {
 	isSelected = s;
@@ -75,6 +85,10 @@ int Cards::getValue()
 {
 	return value;
 }
+bool Cards::getHidden()
+{
+	return hidden;
+}
 bool Cards::getIsSelected()
 {
 	return isSelected;
@@ -91,7 +105,7 @@ LCardSprite Cards::getCardSprite()
 {
 	return cardCurrentSprite;
 }
-void Cards::handleEvent(SDL_Event* e, int cardToCardOffSet)
+void Cards::handleEvent(SDL_Event* e)
 {
 	//If mouse event happened
 	if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP)
@@ -189,7 +203,7 @@ void Cards::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture
 			cardSheetTexture->render(gRenderer, mPosition.x, mPosition.y, &getCardRect, degrees, &rotationPoint);
 
 		}
-		
+		/*
 		//highlight cards that are viable plays
 		if (viablePlay == true && !isSelected)
 		{
@@ -200,7 +214,7 @@ void Cards::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture
 				highlightRect = { mPosition.x, mPosition.y, cardToCardOffSet, CARD_HEIGHT };
 			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0, 0xFF);
 			SDL_RenderDrawRect(gRenderer, &highlightRect);
-		}
+		}*/
 	}
 }
 

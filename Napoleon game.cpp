@@ -8,6 +8,7 @@
 #include "Player.h"
 #include <vector>
 #include "time.h"
+#include <sstream>
 
 //Starts up SDL and creates window
 bool init();
@@ -27,6 +28,10 @@ SDL_Renderer* gRenderer = NULL;
 //pictures of the cards and the card back
 LTexture cardSheetTexture;
 LTexture cardBackTexture;
+LTexture gTextTexture;
+
+//Globally used font
+TTF_Font *gFont = NULL;
 
 //cards dealt to everyone
 vector<Cards> yourCards;
@@ -95,6 +100,12 @@ bool init()
 					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
 					success = false;
 				}
+				//Initialize SDL_ttf
+				if (TTF_Init() == -1)
+				{
+					printf("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+					success = false;
+				}
 			}
 		}
 	}
@@ -106,10 +117,18 @@ bool loadMedia()
 {
 	//Loading success flag
 	bool success = true;
+	
+	//Open the font
+	gFont = TTF_OpenFont("Napoleon game/OpenSans-Semibold.ttf", 24);
+	if (gFont == NULL)
+	{
+		printf("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
+		success = false;
+	}
 
 	//Load sprites
-	if (!cardSheetTexture.loadFromFile("Napoleon game/poker.cards.png", gRenderer) ||
-		!cardBackTexture.loadFromFile("Napoleon game/card_back_flowers.png", gRenderer))
+	if (!cardSheetTexture.loadFromFile("Napoleon game/poker.cards.smaller.png", gRenderer) ||
+		!cardBackTexture.loadFromFile("Napoleon game/card_back_flowers_smaller.png", gRenderer))
 	{
 		printf("Failed to load sprite texture!\n");
 		success = false;
@@ -158,35 +177,46 @@ int main(int argc, char* args[])
 			SDL_Event e;
 
 			//game variables
-			int bid;
+			int bid = 4; 
+			int currentBid = 4;
 			int index; //hold temporary index for bots to randomly choose card
 			int turn = 0; //whose turn it is
 			int turnCounter = 0; //when counter == 5, means everyone has played
 			int firstSuit; //first played suit, following cards must match if possbile
-			int trumpSuit = CLUBS; //trump suit for the game
+			int trumpSuit = NOSUIT; //trump suit for the game
 			turnStateSprite turnState = FIRST_ROUND_FIRST_TURN_STATE; //initially in the first turnstate
-			int round = 0;
+			int round = 0; //what round it is
+			bool wait = false; //waiting variable
+
+			//the secretary card
+			Cards secCard = Cards(0, 1, false);
+			secCard.setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH / 2, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
+
+			//text stream
+			stringstream text;
 
 			//generate playing space
-			SDL_Rect yourField = { SCREEN_WIDTH / 4 + boardOffSet/4, SCREEN_HEIGHT - CARD_HEIGHT - 2*cardOffSet, SCREEN_WIDTH / 2 - boardOffSet/4, CARD_HEIGHT + 2*cardOffSet };
-			SDL_Rect opp1Field = { 0, 0, SCREEN_WIDTH / 2 - boardOffSet/2, CARD_HEIGHT + 2 * cardOffSet };
-			SDL_Rect opp2Field = { SCREEN_WIDTH / 2 + boardOffSet/2, 0, SCREEN_WIDTH / 2, CARD_HEIGHT + 2 * cardOffSet };
-			SDL_Rect opp3Field = { 0, CARD_HEIGHT + 2 * cardOffSet + boardOffSet, CARD_HEIGHT + 2 * cardOffSet, SCREEN_WIDTH / 2 - boardOffSet / 2};
-			SDL_Rect opp4Field = { SCREEN_WIDTH - (CARD_HEIGHT + 2 * cardOffSet), CARD_HEIGHT + 2 * cardOffSet + boardOffSet, CARD_HEIGHT + 2 * cardOffSet, SCREEN_WIDTH / 2 - boardOffSet / 2 };
+			SDL_Rect yourField = { SCREEN_WIDTH / 4 + boardOffSet/4, SCREEN_HEIGHT - CARD_HEIGHT - 2*cardOffSet, SCREEN_WIDTH / 2 - boardOffSet/2, CARD_HEIGHT + 2*cardOffSet };
+			SDL_Rect opp2Field = { boardOffSet / 4, 0, SCREEN_WIDTH / 2 - boardOffSet/2, CARD_HEIGHT + 2 * cardOffSet };
+			SDL_Rect opp3Field = { SCREEN_WIDTH / 2 + boardOffSet / 4, 0, SCREEN_WIDTH / 2 - boardOffSet / 2, CARD_HEIGHT + 2 * cardOffSet };
+			SDL_Rect opp1Field = { 0, CARD_HEIGHT + 2 * cardOffSet + boardOffSet / 4, CARD_HEIGHT + 2 * cardOffSet, SCREEN_WIDTH / 2 - boardOffSet / 2};
+			SDL_Rect opp4Field = { SCREEN_WIDTH - (CARD_HEIGHT + 2 * cardOffSet), CARD_HEIGHT + 2 * cardOffSet + boardOffSet / 4, CARD_HEIGHT + 2 * cardOffSet, SCREEN_WIDTH / 2 - boardOffSet / 2 };
 
 			Deck d;
 			d.shuffle();
 			d.deal(&yourCards, &opp1Cards, &opp2Cards, &opp3Cards, &opp4Cards, &baggage);
 
 			//put everyone's cards in their hands
-			//your hand is shown
+			//your hand is face up
 			p0 = Player(Hand(yourCards, false));
 
-			//opponent's hand is hidden
+			//opponent's hand is face down
 			p1 = Player(Hand(opp1Cards, true));
 			p2 = Player(Hand(opp2Cards, true));
 			p3 = Player(Hand(opp3Cards, true));
 			p4 = Player(Hand(opp4Cards, true));
+
+			Player playerBaggage = Player(Hand(baggage, false));
 
 			//add the players into a player vector array
 			player.push_back(p0);
@@ -210,86 +240,281 @@ int main(int argc, char* args[])
 			player.at(3).setCPU(true);
 			player.at(4).setCPU(true);
 
-			player.at(0).setRole(NAPOLEON);
-			player.at(1).setRole(SECETARY);
+			player.at(0).setRole(ENEMY);
+			player.at(1).setRole(ENEMY);
 			player.at(2).setRole(ENEMY);
 			player.at(3).setRole(ENEMY);
 			player.at(4).setRole(ENEMY);
 
 			//sets the position of the cards to be displayed
 			//bottom is p0
-			player.at(0).getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 4 + cardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
+			player.at(0).getHand()->setPositionOfFirstCard(yourField.x + cardOffSet, SCREEN_HEIGHT - CARD_HEIGHT - cardOffSet);
 			
 			//top left is p2
-			player.at(2).getHand()->setPositionOfFirstCard(cardOffSet, cardOffSet);
+			player.at(2).getHand()->setPositionOfFirstCard(opp2Field.x + cardOffSet, cardOffSet);
 			
 			//top right is p3
-			player.at(3).getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 2 + boardOffSet / 2 + cardOffSet, cardOffSet);
+			player.at(3).getHand()->setPositionOfFirstCard(opp3Field.x + cardOffSet, cardOffSet);
 			
 			//bottom left is p1
-			player.at(1).getHand()->setPositionOfFirstCard(cardOffSet + CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet);
+			player.at(1).getHand()->setPositionOfFirstCard(cardOffSet + CARD_HEIGHT, opp1Field.y + cardOffSet);
 			
 			//bottom right is p4
-			player.at(4).getHand()->setPositionOfFirstCard(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, CARD_HEIGHT + 3 * cardOffSet + boardOffSet + CARD_WIDTH + TOTAL_CARDS * cardToCardOffSet - cardToCardOffSet);
+			player.at(4).getHand()->setPositionOfFirstCard(SCREEN_WIDTH - cardOffSet - CARD_HEIGHT, opp4Field.y + opp4Field.h - cardOffSet);
 			
 			//sets the position of the baggage to be displayed
-			baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
+			playerBaggage.getHand()->setPositionOfFirstCard(SCREEN_WIDTH / 2 - CARD_WIDTH / 2 - cardToCardOffSet / 2, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
+			playerBaggage.getHand()->at(1)->setLast(true); // set the last card as last
+			
+			/*baggage[0].setPosition(SCREEN_WIDTH / 2 - CARD_WIDTH, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
 			baggage[1].setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - CARD_HEIGHT / 2);
+			baggage[0].setFacedown(false);
+			baggage[1].setFacedown(false);*/
 
-			///////////////////////////////  REMOVE LATER
-			//random variable to get the game shown at least once before bidding
-			int count = 0;
+			//sets the position of the played cards
+			c.at(0).setPosition(yourField.x + yourField.w / 2 - CARD_WIDTH / 2 , SCREEN_HEIGHT - CARD_HEIGHT - playedCardOffSet);
+			c.at(2).setPosition(opp2Field.x + opp2Field.w - CARD_WIDTH - cardOffSet, playedCardOffSet);
+			c.at(3).setPosition(opp3Field.x + cardOffSet, playedCardOffSet);
+			c.at(1).setPosition(opp1Field.w + CARD_HEIGHT + cardOffSet, opp1Field.y + opp1Field.h / 2 - CARD_WIDTH / 2);
+			c.at(4).setPosition(opp4Field.x - CARD_HEIGHT - cardOffSet, opp4Field. y + opp4Field.h / 2 + CARD_WIDTH / 2);
+			//set them all to be hidden initially
+			for (int i = 0; i < c.size(); i++)
+			{
+				c.at(i).setFacedown(false);
+				c.at(i).setHidden(true);
+			}
 
 			//While application is running
 			while ((gameState != QUIT_GAME))
 			{
 				if (gameState == BIDDING_STATE)
 				{
-					if (SDL_PollEvent(&e) != 0)
+					if (player.at(turn).isCPU() == false)
 					{
-						//User requests quit
-						if (e.type == SDL_QUIT)
+						if (SDL_PollEvent(&e) != 0)
 						{
-							gameState = QUIT_GAME;
+							//User requests quit
+							if (e.type == SDL_QUIT)
+							{
+								gameState = QUIT_GAME;
+							}
+							if (e.type == SDL_KEYDOWN)
+							{
+								//Adjust the velocity
+								switch (e.key.keysym.sym)
+								{
+								case SDLK_RIGHT:
+									if (currentBid < 10)
+										currentBid++;
+									break;
+								case SDLK_LEFT:
+									if (currentBid > bid)
+										currentBid--;
+									break;
+								case SDLK_SPACE:
+									bid = currentBid;
+									turnCounter++;
+									turn++;
+									break;
+								}
+							}
 						}
 					}
-					if (count > 0)
-					{
-
-						cout << "What would you like to bid? (1-10)" << endl;
-						cin >> bid;
-						while (bid < 0 || bid > 10)
-						{
-							cout << "please enter a valid bid (1-10)" << endl;
-							cin >> bid;
-						}
-
-						cout << "What is the trump suit (hearts, spades, diamonds, clubs)" << endl;
-						
-						string temp;
-						cin >> temp;
-						while (temp != "hearts" && temp != "spades" && temp != "diamonds" && temp != "clubs")
-						{
-							cout << "Please enter a valid trump suit (hearts, spades, diamonds, clubs)" << endl;
-							cin >> temp;
-						}
-						if (temp == "hearts")
-							trumpSuit = HEARTS;
-						else if (temp == "spades")
-							trumpSuit = SPADES;
-						else if (temp == "diamonds")
-							trumpSuit = DIAMONDS;
-						else if (temp == "clubs")
-							trumpSuit = CLUBS;
-
-						cout << "Please start the game" << endl;
-
-						gameState = IN_GAME;
-					}
+					//if it's a cpu, just pass on bidding state
 					else
-						count++;
+					{
+						SDL_Delay(1000);
+						turnCounter++;
+						turn++;
+						if (turn == 5)
+							turn = 0;
+					}
+					if (turnCounter == 5)
+					{
+						if (bid != 4)
+						{
+							player.at(turn).setRole(NAPOLEON);
+							gameState = NAPOLEON_CHOOSE_TRUMP;
+							turnCounter = 0;
+						}
+						else
+							turnCounter = 0;
+					}
+				}
+				else if (gameState == NAPOLEON_CHOOSE_TRUMP)
+				{
+					if (player.at(turn).isCPU() == false)
+					{
+						if (SDL_PollEvent(&e) != 0)
+						{
+							//User requests quit
+							if (e.type == SDL_QUIT)
+							{
+								gameState = QUIT_GAME;
+							}
+							if (e.type == SDL_KEYDOWN)
+							{
+								//Adjust the velocity
+								switch (e.key.keysym.sym)
+								{
+								case SDLK_RIGHT:
+									trumpSuit++;
+									if (trumpSuit > NOSUIT)
+										trumpSuit = HEARTS;
+									break;
+								case SDLK_LEFT:
+									trumpSuit--;
+									if (trumpSuit < HEARTS)
+										trumpSuit = NOSUIT;
+									break;
+								case SDLK_SPACE:
+									gameState = NAPOLEON_DEAL_BAGGAGE;
+									break;
+								}
+							}
+						}
+					}
+					//if it is a CPU
+					else
+					{
+						
+					}
 
+				}
+				else if (gameState == NAPOLEON_DEAL_BAGGAGE)
+				{
+					if (player.at(turn).isCPU() == false)
+					{
+						if (SDL_PollEvent(&e) != 0)
+						{
+							//User requests quit
+							if (e.type == SDL_QUIT)
+							{
+								gameState = QUIT_GAME;
+							}
+							player.at(turn).getHand()->handleEvent(&e);
+							playerBaggage.getHand()->handleEvent(&e);
+							if (e.type == SDL_KEYDOWN)
+							{
+								//Adjust the velocity
+								switch (e.key.keysym.sym)
+								{
+								case SDLK_SPACE:
+									if (playerBaggage.getHand()->getSelectedCardIndex() != -1 && player.at(turn).getHand()->getSelectedCardIndex() != -1)
+									{
+										swapCards(*(playerBaggage.getHand()->at(playerBaggage.getHand()->getSelectedCardIndex())),
+											*(player.at(turn).getHand()->at(player.at(turn).getHand()->getSelectedCardIndex())));
+										player.at(turn).getHand()->sort();
+									}
+									break;
+								case SDLK_ESCAPE:
+									playerBaggage.getHand()->deselectAll();
+									player.at(turn).getHand()->deselectAll();
+									break;
+								case SDLK_RETURN:
+									player.at(turn).getHand()->deselectAll();
+									gameState = NAPOLEON_CHOOSE_SEC;
+								}
+							}
+						}
+					}
+					//if it is a CPU
+					else
+					{
 
+					}
+				}
+				else if (gameState == NAPOLEON_CHOOSE_SEC)
+				{
+					if (player.at(turn).isCPU() == false)
+					{
+						if (SDL_PollEvent(&e) != 0)
+						{
+							//User requests quit
+							if (e.type == SDL_QUIT)
+							{
+								gameState = QUIT_GAME;
+							}
+							if (e.type == SDL_KEYDOWN)
+							{
+								//Adjust the velocity
+								switch (e.key.keysym.sym)
+								{
+								case SDLK_UP:
+									if (secCard.getSuit() == CLUBS)
+										secCard.setCard(HEARTS, secCard.getValue());
+									else
+										secCard.setCard(secCard.getSuit() + 1, secCard.getValue());
+									break;
+								case SDLK_DOWN:
+									if (secCard.getSuit() == HEARTS)
+										secCard.setCard(CLUBS, secCard.getValue());
+									else
+										secCard.setCard(secCard.getSuit() - 1, secCard.getValue());
+									break;
+								case SDLK_RIGHT:
+									if (secCard.getValue() == 13)
+										secCard.setCard(secCard.getSuit(), 1);
+									else
+										secCard.setCard(secCard.getSuit(), secCard.getValue() + 1);
+									break;
+								case SDLK_LEFT:
+									if (secCard.getValue() == 1)
+										secCard.setCard(secCard.getSuit(), 13);
+									else
+										secCard.setCard(secCard.getSuit(), secCard.getValue() - 1);
+									break;
+								case SDLK_SPACE:
+									int flag = true;
+									//find the person who has the secretary card and set them as secretary
+									for (int i = 0; i < TOTAL_CARDS; i++)
+									{
+										//make sure selected card is not within your hand or your baggage
+										if (player.at(turn).getHand()->at(i)->getSuit() == secCard.getSuit() &&
+											player.at(turn).getHand()->at(i)->getValue() == secCard.getValue())
+										{
+											cout << "Please choose a valid secretary";
+											flag = false;
+											break;
+										}
+									}
+									for (int i = 0; i < 2; i++)
+									{
+										//make sure selected card is not within your hand or your baggage
+										if (playerBaggage.getHand()->at(i)->getSuit() == secCard.getSuit() &&
+											playerBaggage.getHand()->at(i)->getValue() == secCard.getValue())
+										{
+											cout << "Please choose a valid secretary";
+											flag = false;
+											break;
+										}
+									}
+									if (flag == true)
+									{
+									//otherwise, put selected person as sec
+										for (int i = 0; i < TOTAL_CARDS; i++)
+										{
+											for (int j = 0; j < 5; j++)
+											if (player.at(j).getHand()->at(i)->getSuit() == secCard.getSuit() &&
+												player.at(j).getHand()->at(i)->getValue() == secCard.getValue())
+											{
+												player.at(j).setRole(SECRETARY);
+												gameState = IN_GAME;
+												break;
+											}
+										}
+									}
+									break;
+								}
+							}
+						}
+
+					}
+					//if it's a cpu, do something
+					else
+					{
+
+					}
 				}
 				else if (gameState == IN_GAME)
 				{
@@ -318,10 +543,9 @@ int main(int argc, char* args[])
 								{
 									gameState = QUIT_GAME;
 								}
-								for (int i = 0; i < TOTAL_CARDS; i++)
-								{
-									player.at(turn).getHand()->handleEvent(&e);
-								}
+
+								player.at(turn).getHand()->handleEvent(&e);
+								
 								//play selected
 								if (e.type == SDL_KEYDOWN)
 								{
@@ -335,6 +559,7 @@ int main(int argc, char* args[])
 											cout << "Player " << turn << ": ";
 											c.at(turn).print();
 											cout << endl;
+											c.at(turn).setHidden(false);
 											turn++;
 											turnCounter++;
 											//if it was p4 who last played, set p0 as next player
@@ -342,6 +567,9 @@ int main(int argc, char* args[])
 												turn = 0;
 											turnState = FOLLOWING_TURN_STATE;
 										}
+										break;
+									case SDLK_ESCAPE:
+										player.at(turn).getHand()->deselectAll();
 										break;
 									}
 								}
@@ -363,6 +591,8 @@ int main(int argc, char* args[])
 							cout << "Player " << turn << ": ";
 							c.at(turn).print();
 							cout << endl;
+							c.at(turn).setHidden(false);
+							SDL_Delay(1000);
 							turn++;
 							turnCounter++;
 							//if it was p4 who last played, set p0 as next player
@@ -387,10 +617,7 @@ int main(int argc, char* args[])
 								{
 									gameState = QUIT_GAME;
 								}
-								for (int i = 0; i < TOTAL_CARDS; i++)
-								{
-									player.at(turn).getHand()->handleEvent(&e);
-								}
+								player.at(turn).getHand()->handleEvent(&e);
 								//play selected
 								if (e.type == SDL_KEYDOWN)
 								{
@@ -404,6 +631,7 @@ int main(int argc, char* args[])
 											cout << "Player " << turn << ": ";
 											c.at(turn).print();
 											cout << endl;
+											c.at(turn).setHidden(false);
 											turn++;
 											turnCounter++;
 											//if it was p4 who last played, set p0 as next player
@@ -411,6 +639,9 @@ int main(int argc, char* args[])
 												turn = 0;
 											turnState = FOLLOWING_TURN_STATE;
 										}
+										break;
+									case SDLK_ESCAPE:
+										player.at(turn).getHand()->deselectAll();
 										break;
 									}
 								}
@@ -432,6 +663,8 @@ int main(int argc, char* args[])
 							cout << "Player " << turn << ": ";
 							c.at(turn).print();
 							cout << endl;
+							c.at(turn).setHidden(false);
+							SDL_Delay(1000);
 							turn++;
 							turnCounter++;
 							//if it was p4 who last played, set p0 as next player
@@ -454,10 +687,7 @@ int main(int argc, char* args[])
 								{
 									gameState = QUIT_GAME;
 								}
-								for (int i = 0; i < TOTAL_CARDS; i++)
-								{
-									player.at(turn).getHand()->handleEvent(&e);
-								}
+								player.at(turn).getHand()->handleEvent(&e);
 								//play selected
 								if (e.type == SDL_KEYDOWN)
 								{
@@ -470,11 +700,13 @@ int main(int argc, char* args[])
 											cout << "Player " << turn << ": ";
 											c.at(turn).print();
 											cout << endl;
+											c.at(turn).setHidden(false);
 											turn++;
 											turnCounter++;
 											//if everyone has played, determine winner and move to the next round
 											if (turnCounter == 5)
 											{
+												wait = true;
 												round++;
 												Cards roundWinner = determineWinner(c.at(0), c.at(1), c.at(2), c.at(3), c.at(4), firstSuit, trumpSuit);
 
@@ -498,7 +730,9 @@ int main(int argc, char* args[])
 												if (round == 10)
 													gameState = GAME_OVER;
 												else
+												{
 													turnState = FIRST_TURN_STATE;
+												}
 
 											}
 
@@ -511,6 +745,9 @@ int main(int argc, char* args[])
 												turnState = FOLLOWING_TURN_STATE;
 											}
 										}
+										break;
+									case SDLK_ESCAPE:
+										player.at(turn).getHand()->deselectAll();
 										break;
 									}
 								}
@@ -531,12 +768,15 @@ int main(int argc, char* args[])
 							cout << "Player " << turn << ": ";
 							c.at(turn).print();
 							cout << endl;
+							c.at(turn).setHidden(false);
+							SDL_Delay(1000);
 							turn++;
 							turnCounter++;
 
 							//if everyone has played, determine winner and move to the next round
 							if (turnCounter == 5)
 							{
+								wait = true;
 								round++;
 								Cards roundWinner = determineWinner(c.at(0), c.at(1), c.at(2), c.at(3), c.at(4), firstSuit, trumpSuit);
 
@@ -560,7 +800,9 @@ int main(int argc, char* args[])
 								if (round == 10)
 									gameState = GAME_OVER;
 								else
+								{
 									turnState = FIRST_TURN_STATE;
+								}
 
 							}
 
@@ -586,19 +828,19 @@ int main(int argc, char* args[])
 						}
 					}
 
-					//Add up Napoleon and Secetary's points
+					//Add up Napoleon and secretary's points
 					int napPoints = 0;
 					for (int i = 0; i < player.size(); i++)
 					{
-						if (player.at(i).getRole() == NAPOLEON || player.at(i).getRole() == SECETARY)
+						if (player.at(i).getRole() == NAPOLEON || player.at(i).getRole() == SECRETARY)
 						{
 							napPoints += player.at(i).getPoints();
 						}
 					}
-					cout << "Napoleon and Secetary got " << napPoints << " points!" << endl;
+					cout << "Napoleon and secretary got " << napPoints << " points!" << endl;
 					if (napPoints >= bid)
 					{
-						cout << "Napoleon and Secetary wins!" << endl;
+						cout << "Napoleon and secretary wins!" << endl;
 					}
 					else
 						cout << "Enemies win!" << endl;
@@ -625,13 +867,198 @@ int main(int argc, char* args[])
 				SDL_SetRenderDrawColor(gRenderer, 0, 0xFF, 0, 0xFF);
 				SDL_RenderFillRect(gRenderer, &yourField);
 				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0, 0, 0xFF);
-				SDL_RenderFillRect(gRenderer, &opp1Field);
-				SDL_SetRenderDrawColor(gRenderer, 0, 0, 0xFF, 0xFF);
 				SDL_RenderFillRect(gRenderer, &opp2Field);
-				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0, 0xFF, 0xFF);
+				SDL_SetRenderDrawColor(gRenderer, 0, 0, 0xFF, 0xFF);
 				SDL_RenderFillRect(gRenderer, &opp3Field);
+				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0, 0xFF, 0xFF);
+				SDL_RenderFillRect(gRenderer, &opp1Field);
 				SDL_SetRenderDrawColor(gRenderer, 0, 0xFF, 0xFF, 0xFF);
 				SDL_RenderFillRect(gRenderer, &opp4Field);
+
+
+				if (gameState == BIDDING_STATE)
+				{
+					SDL_Color textColor = { 0, 0, 0 };
+					text.str("");
+					if (bid == 4)
+						text << "Curent Highest Bid: NO BID";
+					else
+						text << "Curent Highest Bid: " << bid;
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 - 3 *gTextTexture.getHeight() / 2 );
+
+					text.str("");
+					if (turn == 0)
+					{
+						if (currentBid == bid)
+							text << "Your Bid: Pass";
+						else
+							text << "Your Bid: " << currentBid;
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, (SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
+					}
+					else
+					{
+						if (currentBid == bid)
+							text << "Opponent " << turn << " Bid: Pass";
+						else
+							text << "Opponent " << turn << " Bids" << currentBid;
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, (SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
+					}
+				}
+
+				else if (gameState == NAPOLEON_CHOOSE_TRUMP)
+				{
+					SDL_Color textColor = { 0, 0, 0 };
+					text.str("");
+
+					switch (player.at(0).getRole())
+					{
+					case NAPOLEON:
+						text << "Nap";
+						break;
+					case SECRETARY:
+						text << "Sec";
+						break;
+					case ENEMY:
+						text << "Enemy";
+						break;
+					}
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, yourField.y - gTextTexture.getHeight());
+					
+					text.str("");
+					text << "Choose trump suit";
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 - 3 * gTextTexture.getHeight() / 2);
+
+					text.str("");
+					switch (trumpSuit)
+					{
+					case HEARTS:
+						text << "Hearts";
+						break;
+					case SPADES:
+						text << "Spades";
+						break;
+					case DIAMONDS:
+						text << "Diamonds";
+						break;
+					case CLUBS:
+						text << "Clubs";
+						break;
+					case NOSUIT:
+						text << "No trump";
+						break;
+					}
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, (SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
+				}
+				else if (gameState == NAPOLEON_DEAL_BAGGAGE)
+				{
+					//render baggage
+					playerBaggage.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+
+					SDL_Color textColor = { 0, 0, 0 };
+					text.str("");
+					switch (trumpSuit)
+					{
+					case HEARTS:
+						text << "Trump Suit: Hearts";
+						break;
+					case SPADES:
+						text << "Trump Suit: Spades";
+						break;
+					case DIAMONDS:
+						text << "Trump Suit: Diamonds";
+						break;
+					case CLUBS:
+						text << "Trump Suit: Clubs";
+						break;
+					case NOSUIT:
+						text << "Trump Suit: No trump";
+						break;
+					}
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT/ 2 + CARD_HEIGHT / 2 );
+				}
+				else if (gameState == NAPOLEON_CHOOSE_SEC)
+				{
+					SDL_Color textColor = { 0, 0, 0 };
+					text.str("");
+					text << "Choose secretary";
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 - 3 * gTextTexture.getHeight() / 2 - CARD_HEIGHT / 2);
+
+					text.str("");
+					switch (trumpSuit)
+					{
+					case HEARTS:
+						text << "Trump Suit: Hearts";
+						break;
+					case SPADES:
+						text << "Trump Suit: Spades";
+						break;
+					case DIAMONDS:
+						text << "Trump Suit: Diamonds";
+						break;
+					case CLUBS:
+						text << "Trump Suit: Clubs";
+						break;
+					case NOSUIT:
+						text << "Trump Suit: No trump";
+						break;
+					}
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 + CARD_HEIGHT / 2);
+
+					secCard.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+
+
+				}
+				else if (gameState == IN_GAME)
+				{
+					//render text
+					SDL_Color textColor = { 0, 0, 0 };
+					text.str("");
+					switch (player.at(0).getRole())
+					{
+					case NAPOLEON:
+						text << "Napoleon";
+						break;
+					case SECRETARY:
+						text << "secretary";
+						break;
+					case ENEMY:
+						text << "Enemy";
+						break;
+					}
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, yourField.y - gTextTexture.getHeight());
+
+					text.str("");
+					switch (trumpSuit)
+					{
+					case HEARTS:
+						text << "Trump Suit: Hearts";
+						break;
+					case SPADES:
+						text << "Trump Suit: Spades";
+						break;
+					case DIAMONDS:
+						text << "Trump Suit: Diamonds";
+						break;
+					case CLUBS:
+						text << "Trump Suit: Clubs";
+						break;
+					case NOSUIT:
+						text << "Trump Suit: No trump";
+						break;
+					}
+					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, (SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
+				}
 
 				//Render hands
 				player.at(0).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
@@ -640,10 +1067,6 @@ int main(int argc, char* args[])
 				player.at(3).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				player.at(4).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
 
-				//render baggage
-				baggage[0].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-				baggage[1].render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-
 				//render hovered cards fully
 				for (int i = 0; i < player.at(0).getHand()->getHandSize(); i++)
 				{
@@ -651,8 +1074,32 @@ int main(int argc, char* args[])
 						player.at(0).getHand()->at(i)->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 				}
 
+				//render all the cards played so far
+				if (c.at(0).getHidden() == false)
+					c.at(0).render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				if (c.at(1).getHidden() == false)
+					c.at(1).render(gRenderer, &cardSheetTexture, &cardBackTexture, 90);
+				if (c.at(2).getHidden() == false)
+					c.at(2).render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				if (c.at(3).getHidden() == false)
+					c.at(3).render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+				if (c.at(4).getHidden() == false)
+					c.at(4).render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
+
 				//Update screen
 				SDL_RenderPresent(gRenderer);
+				
+				//wait as the winner of the round is determined, add a cool animation here
+				if (wait == true)
+				{
+					SDL_Delay(2000);
+
+					//set all played cards to be hidden
+					for (int i = 0; i < c.size(); i++)
+						c.at(i).setHidden(true);
+
+					wait = false;
+				}
 			}
 		}
 	}

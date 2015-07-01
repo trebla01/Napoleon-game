@@ -65,9 +65,9 @@ void Deck::deal(vector<Cards>* p1, vector<Cards>* p2, vector<Cards>* p3, vector<
 	}
 
 	//give the last two to baggage
-	Cards tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13, true);
+	Cards tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13 + 1, true);
 	baggage->push_back(tempCard);
 	deck.erase(deck.begin());
-	tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13, true);
+	tempCard = Cards(deck.at(0) / 13, deck.at(0) % 13 + 1, true);
 	baggage->push_back(tempCard);
 }

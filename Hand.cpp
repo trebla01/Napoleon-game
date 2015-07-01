@@ -98,6 +98,16 @@ void Hand::sort()
 	cardsInHand.at(handSize - 1).setLast(true);
 }
 
+//deselect all cards
+void Hand::deselectAll()
+{
+	for (int i = 0; i < handSize; i++)
+	{
+		cardsInHand.at(i).setSelected(false);
+	}
+	selectedCardIndex = -1;
+}
+
 void Hand::findViablePlay(int suit)
 {
 	bool hasSuit = false;
@@ -156,7 +166,7 @@ bool Hand::playSelected(Cards& c)
 
 	else
 	{
-		c = cardsInHand.at(selectedCardIndex);
+		c.setCard(cardsInHand.at(selectedCardIndex).getSuit(), cardsInHand.at(selectedCardIndex).getValue());
 		cardsInHand.erase(cardsInHand.begin() + selectedCardIndex);
 		selectedCardIndex = -1;
 		handSize--;
@@ -177,7 +187,7 @@ void Hand::handleEvent(SDL_Event* e)
 
 		for (int i = 0; i < handSize; i++)
 		{
-			cardsInHand.at(i).handleEvent(e, cardToCardOffSet);
+			cardsInHand.at(i).handleEvent(e);
 
 			//if a card was clicked on, select that card, deselect all other cards
 			if (cardsInHand.at(i).getIsSelected() == true)

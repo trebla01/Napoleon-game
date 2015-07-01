@@ -94,4 +94,15 @@ Cards determineWinner(Cards c1, Cards c2, Cards c3, Cards c4, Cards c5, int firs
 
 }
 
+void swapCards(Cards& c1, Cards& c2)
+{
+	int tempSuit;
+	int tempValue;
+	tempSuit = c1.getSuit();
+	tempValue = c1.getValue();
+
+	c1.setCard(c2.getSuit(), c2.getValue());
+	c2.setCard(tempSuit, tempValue);
+}
+
 #endif

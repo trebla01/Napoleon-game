@@ -24,7 +24,7 @@ public:
 	bool loadFromFile(std::string path, SDL_Renderer* gRenderer);
 
 	//Creates image from font string
-	bool loadFromRenderedText(SDL_Renderer* gRenderer, std::string textureText, SDL_Color textColor, SDL_Color bgColor, TTF_Font* gFont);
+	bool loadFromRenderedText(SDL_Renderer* gRenderer, std::string textureText, SDL_Color textColor, TTF_Font* gFont);
 
 	//Dellocates texture
 	void free();
