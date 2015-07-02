@@ -58,5 +58,4 @@ enum gameStateSprite
 	TUTORIAL = 9
 };
 
-
 #endif
