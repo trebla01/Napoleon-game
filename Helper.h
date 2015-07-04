@@ -127,7 +127,7 @@ void playerBid (Player p, int& bid, int& previousBid, gameStateSprite& gameState
 			if (bid > previousBid)
 				bid--;
 			break;
-		case SDLK_SPACE:
+		case SDLK_RETURN:
 			if (bid > previousBid)
 			{
 				turnCounter = 0;
@@ -192,7 +192,7 @@ void cpuBid(Player p, int& bid, int& turnCounter, int& turn)
 	}
 	//otherwise, don't bid, just pass
 	turnCounter++;
-
 }
+
 
 #endif

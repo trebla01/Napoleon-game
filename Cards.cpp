@@ -7,6 +7,7 @@
 #include "LTexture.h"
 #include "Cards.h"
 #include "Constants.h"
+#include <sstream>
 
 Cards::Cards()
 {
@@ -218,40 +219,43 @@ void Cards::render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture
 	}
 }
 
-void Cards::print()
+std::string Cards::print()
 {
+	std::stringstream ss;
 	switch (value)
 	{
 	case 1:
-		std::cout << "Ace";
+		ss << "Ace";
 		break;
 	case 11: 
-		std::cout << "Jack";
+		ss << "Jack";
 		break;
 	case 12: 
-		std::cout << "Queen";
+		ss << "Queen";
 		break;
 	case 13: 
-		std::cout << "King";
+		ss << "King";
 		break;
 	default: 
-		std::cout << value;
+		ss << value;
 		break;
 	}
-	std::cout << " of ";
+	ss << " of ";
 	switch (suit)
 	{
 	case 0: 
-		std::cout << "Hearts";
+		ss << "Hearts";
 		break;
 	case 1: 
-		std::cout << "Spades";
+		ss << "Spades";
 		break;
 	case 2: 
-		std::cout << "Diamonds";
+		ss << "Diamonds";
 		break;
 	case 3: 
-		std::cout << "Clubs";
+		ss << "Clubs";
 		break;
 	}
+
+	return ss.str().c_str();
 }

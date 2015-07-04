@@ -51,7 +51,7 @@ public:
 	void render(SDL_Renderer* gRenderer, LTexture* cardSheetTexture, LTexture* cardBackTexture, int degrees);
 
 	//prints card to output console
-	void print();
+	std::string print();
 
 private:
 	//0-3, hearts, spades diamonds, clubs

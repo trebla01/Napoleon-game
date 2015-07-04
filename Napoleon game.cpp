@@ -32,6 +32,7 @@ LTexture gTextTexture;
 
 //Globally used font
 TTF_Font *gFont = NULL;
+TTF_Font *gFontSmall = NULL;
 
 //cards dealt to everyone
 vector<Cards> yourCards;
@@ -126,6 +127,13 @@ bool loadMedia()
 		success = false;
 	}
 
+	gFontSmall = TTF_OpenFont("Napoleon game/OpenSans-Semibold.ttf", 20);
+	if (gFont == NULL)
+	{
+		printf("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
+		success = false;
+	}
+
 	//Load sprites
 	if (!cardSheetTexture.loadFromFile("Napoleon game/poker.cards.smaller.png", gRenderer) ||
 		!cardBackTexture.loadFromFile("Napoleon game/card_back_flowers_smaller.png", gRenderer))
@@ -212,12 +220,12 @@ int main(int argc, char* args[])
 			p0 = Player(Hand(yourCards, false));
 
 			//opponent's hand is face down
-			p1 = Player(Hand(opp1Cards, false));
-			p2 = Player(Hand(opp2Cards, false));
-			p3 = Player(Hand(opp3Cards, false));
-			p4 = Player(Hand(opp4Cards, false));
+			p1 = Player(Hand(opp1Cards, true));
+			p2 = Player(Hand(opp2Cards, true));
+			p3 = Player(Hand(opp3Cards, true));
+			p4 = Player(Hand(opp4Cards, true));
 
-			Player playerBaggage = Player(Hand(baggage, false));
+			Player playerBaggage = Player(Hand(baggage, true));
 
 			//add the players into a player vector array
 			player.push_back(p0);
@@ -406,65 +414,145 @@ int main(int argc, char* args[])
 									if (trumpSuit < HEARTS)
 										trumpSuit = NOSUIT;
 									break;
-								case SDLK_SPACE:
+								case SDLK_RETURN:
 									gameState = NAPOLEON_DEAL_BAGGAGE;
 									break;
 								}
 							}
 						}
+						text.str("");
+						switch (player.at(0).getRole())
+						{
+						case NAPOLEON:
+							text << "Napoleon";
+							break;
+						}
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2 - 100, yourField.y - gTextTexture.getHeight());
+
+						text.str("");
+						text << "Choose trump suit";
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 - 3 * gTextTexture.getHeight() / 2);
+
+						text.str("");
+						switch (trumpSuit)
+						{
+						case HEARTS:
+							text << "Hearts";
+							break;
+						case SPADES:
+							text << "Spades";
+							break;
+						case DIAMONDS:
+							text << "Diamonds";
+							break;
+						case CLUBS:
+							text << "Clubs";
+							break;
+						case NOSUIT:
+							text << "No trump";
+							break;
+						}
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, (SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
+
+						//Update screen
+						SDL_RenderPresent(gRenderer);
 					}
 					//if it is a CPU
 					else
 					{
-						
+						int tempSuitCount[4] = { 0 };
+						int tempSuitTotalValue[4] = { 0 };
+						//pick the most frequent suit, if multiple suits, pick the one with the highest added points
+						for (int i = 0; i < TOTAL_CARDS; i++)
+						{
+							switch (player.at(turn).getHand()->at(i)->getSuit())
+							{
+							case HEARTS: 
+								tempSuitCount[0]++; 
+								if (player.at(turn).getHand()->at(i)->getValue() == 1)
+									tempSuitTotalValue[0] = tempSuitTotalValue[0] + 14;
+								else
+									tempSuitTotalValue[0] = tempSuitTotalValue[0] + player.at(turn).getHand()->at(i)->getValue();
+								break;
+							case SPADES: 
+								tempSuitCount[1]++; 
+								if (player.at(turn).getHand()->at(i)->getValue() == 1)
+									tempSuitTotalValue[1] += 14;
+								else
+									tempSuitTotalValue[1] += player.at(turn).getHand()->at(i)->getValue();
+								break;
+							case DIAMONDS: 
+								tempSuitCount[2]++; 
+								if (player.at(turn).getHand()->at(i)->getValue() == 1)
+									tempSuitTotalValue[2] += 14;
+								else
+									tempSuitTotalValue[2] += player.at(turn).getHand()->at(i)->getValue();
+								break;
+							case CLUBS: 
+								tempSuitCount[3]++; 
+								if (player.at(turn).getHand()->at(i)->getValue() == 1)
+									tempSuitTotalValue[3] += 14;
+								else
+									tempSuitTotalValue[3] += player.at(turn).getHand()->at(i)->getValue();
+								break;
+							}
+						}
+						int mostFrequentSuit = 0;
+						for (int i = 1; i < 4; i++)
+						{
+							if (tempSuitCount[i] > tempSuitCount[mostFrequentSuit])
+								mostFrequentSuit = i;
+							else if (tempSuitCount[i] == tempSuitCount[mostFrequentSuit])
+							{
+								if (tempSuitTotalValue[i] > tempSuitTotalValue[mostFrequentSuit])
+								{
+									mostFrequentSuit = i;
+								}
+							}
+						}
+						trumpSuit = mostFrequentSuit;
+
+
+						text.str("");
+						switch (player.at(0).getRole())
+						{
+						case NAPOLEON:
+							text << "Napoleon";
+							break;
+						}
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2 - 100, yourField.y - gTextTexture.getHeight());
+
+						text.str("");
+						switch (trumpSuit)
+						{
+						case HEARTS:
+							text << "Trump Suit: Hearts";
+							break;
+						case SPADES:
+							text << "Trump Suit: Spades";
+							break;
+						case DIAMONDS:
+							text << "Trump Suit: Diamonds";
+							break;
+						case CLUBS:
+							text << "Trump Suit: Clubs";
+							break;
+						case NOSUIT:
+							text << "Trump Suit: No trump";
+							break;
+						}
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, (SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
+
+						//Update screen
+						SDL_RenderPresent(gRenderer);
+						SDL_Delay(1000);
+						gameState = NAPOLEON_DEAL_BAGGAGE;
 					}
-
-					text.str("");
-					switch (player.at(0).getRole())
-					{
-					case NAPOLEON:
-						text << "Napoleon";
-						break;
-					case SECRETARY:
-						text << "Secretary";
-						break;
-					case ENEMY:
-						text << "Enemy";
-						break;
-					}
-					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
-					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2 - 100, yourField.y - gTextTexture.getHeight());
-
-					text.str("");
-					text << "Choose trump suit";
-					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
-					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 - 3 * gTextTexture.getHeight() / 2);
-
-					text.str("");
-					switch (trumpSuit)
-					{
-					case HEARTS:
-						text << "Hearts";
-						break;
-					case SPADES:
-						text << "Spades";
-						break;
-					case DIAMONDS:
-						text << "Diamonds";
-						break;
-					case CLUBS:
-						text << "Clubs";
-						break;
-					case NOSUIT:
-						text << "No trump";
-						break;
-					}
-					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
-					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, (SCREEN_HEIGHT - gTextTexture.getHeight()) / 2);
-
-					//Update screen
-					SDL_RenderPresent(gRenderer);
-
 				}
 				else if (gameState == NAPOLEON_DEAL_BAGGAGE)
 				{
@@ -509,40 +597,210 @@ int main(int argc, char* args[])
 								}
 							}
 						}
+
+						//render baggage
+						playerBaggage.getHand()->at(0)->setFacedown(false);
+						playerBaggage.getHand()->at(1)->setFacedown(false);
+						playerBaggage.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+
+						text.str("");
+						switch (trumpSuit)
+						{
+						case HEARTS:
+							text << "Trump Suit: Hearts";
+							break;
+						case SPADES:
+							text << "Trump Suit: Spades";
+							break;
+						case DIAMONDS:
+							text << "Trump Suit: Diamonds";
+							break;
+						case CLUBS:
+							text << "Trump Suit: Clubs";
+							break;
+						case NOSUIT:
+							text << "Trump Suit: No trump";
+							break;
+						}
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 + CARD_HEIGHT / 2);
+
+						//Update screen
+						SDL_RenderPresent(gRenderer);
 					}
 					//if it is a CPU
 					else
 					{
+						//render baggage
+						playerBaggage.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+
+						//for all cards in baggage, switch the low value with the high value in the same suit
+						int suit1 = playerBaggage.getHand()->at(0)->getSuit();
+						for (int i = 0; i < TOTAL_CARDS; i++)
+						{
+							if (player.at(turn).getHand()->at(i)->getSuit() == suit1)
+							{
+								//if the cards in hand is smaller than the cards in baggage in the same suit, swap it
+								if (player.at(turn).getHand()->at(i)->getValue() < playerBaggage.getHand()->at(0)->getValue())
+								{
+								    if (player.at(turn).getHand()->at(i)->getValue() != 1) 
+										swapCards(*(playerBaggage.getHand()->at(0)), *(player.at(turn).getHand()->at(i)));
+								}
+							}
+						}
+						int suit2 = playerBaggage.getHand()->at(0)->getSuit();
+						for (int i = 0; i < TOTAL_CARDS; i++)
+						{
+							if (player.at(turn).getHand()->at(i)->getSuit() == suit2)
+							{
+								if (player.at(turn).getHand()->at(i)->getValue() < playerBaggage.getHand()->at(0)->getValue())
+									if (player.at(turn).getHand()->at(i)->getValue() != 1)
+										swapCards(*(playerBaggage.getHand()->at(0)), *(player.at(turn).getHand()->at(i)));
+							}
+						}
+
+						//add in all trump cards, kings, and aces and swap it with lowest value nontrump card
+						if (suit1 == trumpSuit || playerBaggage.getHand()->at(0)->getValue() == 13 || playerBaggage.getHand()->at(0)->getValue() == 1)
+						{
+							int lowestValueNonTrumpIndex = 0;
+							while (player.at(turn).getHand()->at(lowestValueNonTrumpIndex)->getSuit() == trumpSuit 
+								|| player.at(turn).getHand()->at(lowestValueNonTrumpIndex)->getValue() == 1)
+							{
+								lowestValueNonTrumpIndex++;
+							}
+							for (int i = 0; i < TOTAL_CARDS; i++)
+							{
+								if (player.at(turn).getHand()->at(i)->getSuit() != suit1)
+								{
+									if (player.at(turn).getHand()->at(lowestValueNonTrumpIndex)->getValue() > player.at(turn).getHand()->at(i)->getValue())
+									{
+										if (player.at(turn).getHand()->at(i)->getValue() != 1)
+											lowestValueNonTrumpIndex = i;
+									}
+								}
+							}
+							swapCards(*(playerBaggage.getHand()->at(0)), *(player.at(turn).getHand()->at(lowestValueNonTrumpIndex)));
+							if (suit2 == trumpSuit || playerBaggage.getHand()->at(1)->getValue() == 13 || playerBaggage.getHand()->at(1)->getValue() == 1)
+							{
+								int lowestValueNonTrumpIndex = 0;
+								while (player.at(turn).getHand()->at(lowestValueNonTrumpIndex)->getSuit() == trumpSuit
+									|| player.at(turn).getHand()->at(lowestValueNonTrumpIndex)->getValue() == 1)
+								{
+									lowestValueNonTrumpIndex++;
+								}
+								for (int i = 0; i < TOTAL_CARDS; i++)
+								{
+									if (player.at(turn).getHand()->at(i)->getSuit() != suit2)
+									{
+										if (player.at(turn).getHand()->at(lowestValueNonTrumpIndex)->getValue() > player.at(turn).getHand()->at(i)->getValue())
+										{
+											if (player.at(turn).getHand()->at(i)->getValue() != 1)
+												lowestValueNonTrumpIndex = i;
+										}
+									}
+								}
+								swapCards(*(playerBaggage.getHand()->at(1)), *(player.at(turn).getHand()->at(lowestValueNonTrumpIndex)));
+							}
+						}
+
+						//pick the least frequent suit, if tie, choose the suit with the lowest added value
+						//try to empty that suit if the cards are less than king
+						int tempSuitCount[4] = { 0 };
+						int tempSuitTotalValue[4] = { 0 };
+						for (int i = 0; i < TOTAL_CARDS; i++)
+						{
+							switch (player.at(turn).getHand()->at(i)->getSuit())
+							{
+							case HEARTS:
+								tempSuitCount[0]++;
+								if (player.at(turn).getHand()->at(i)->getValue() == 1)
+									tempSuitTotalValue[0] = tempSuitTotalValue[0] + 14;
+								else
+									tempSuitTotalValue[0] = tempSuitTotalValue[0] + player.at(turn).getHand()->at(i)->getValue();
+								break;
+							case SPADES:
+								tempSuitCount[1]++;
+								if (player.at(turn).getHand()->at(i)->getValue() == 1)
+									tempSuitTotalValue[1] += 14;
+								else
+									tempSuitTotalValue[1] += player.at(turn).getHand()->at(i)->getValue();
+								break;
+							case DIAMONDS:
+								tempSuitCount[2]++;
+								if (player.at(turn).getHand()->at(i)->getValue() == 1)
+									tempSuitTotalValue[2] += 14;
+								else
+									tempSuitTotalValue[2] += player.at(turn).getHand()->at(i)->getValue();
+								break;
+							case CLUBS:
+								tempSuitCount[3]++;
+								if (player.at(turn).getHand()->at(i)->getValue() == 1)
+									tempSuitTotalValue[3] += 14;
+								else
+									tempSuitTotalValue[3] += player.at(turn).getHand()->at(i)->getValue();
+								break;
+							}
+						}
+						//determine the least frequent suit
+						int leastFrequentSuit = 0;
+						for (int i = 0; i < 4; i++)
+						{
+							if (tempSuitCount[i] < tempSuitCount[leastFrequentSuit])
+								leastFrequentSuit = i;
+							if (tempSuitCount[i] == tempSuitCount[leastFrequentSuit])
+							{
+								if (tempSuitTotalValue[i] < tempSuitTotalValue[leastFrequentSuit])
+									leastFrequentSuit = i;
+							}
+						}
+						//empty out least frequent suit by replacing cards not equal to ace or king with baggage cards
+						for (int i = 0; i < TOTAL_CARDS; i++)
+						{
+							if (player.at(turn).getHand()->at(i)->getSuit() == leastFrequentSuit
+								|| player.at(turn).getHand()->at(i)->getValue() != 13
+								|| player.at(turn).getHand()->at(i)->getValue() != 1)
+							{
+								if (playerBaggage.getHand()->at(0)->getSuit() != leastFrequentSuit)
+								{
+									swapCards(*(playerBaggage.getHand()->at(0)), *(player.at(turn).getHand()->at(i)));
+								}
+								else if (playerBaggage.getHand()->at(1)->getSuit() != leastFrequentSuit)
+								{
+									swapCards(*(playerBaggage.getHand()->at(1)), *(player.at(turn).getHand()->at(i)));
+								}
+							}
+						}
+						
+						player.at(turn).getHand()->sort();
+
+						text.str("");
+						switch (trumpSuit)
+						{
+						case HEARTS:
+							text << "Trump Suit: Hearts";
+							break;
+						case SPADES:
+							text << "Trump Suit: Spades";
+							break;
+						case DIAMONDS:
+							text << "Trump Suit: Diamonds";
+							break;
+						case CLUBS:
+							text << "Trump Suit: Clubs";
+							break;
+						case NOSUIT:
+							text << "Trump Suit: No trump";
+							break;
+						}
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 + CARD_HEIGHT / 2);
+
+						//Update screen
+						gameState = NAPOLEON_CHOOSE_SEC;
+						SDL_RenderPresent(gRenderer);
+						SDL_Delay(5000);
 
 					}
-
-					//render baggage
-					playerBaggage.getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-
-					text.str("");
-					switch (trumpSuit)
-					{
-					case HEARTS:
-						text << "Trump Suit: Hearts";
-						break;
-					case SPADES:
-						text << "Trump Suit: Spades";
-						break;
-					case DIAMONDS:
-						text << "Trump Suit: Diamonds";
-						break;
-					case CLUBS:
-						text << "Trump Suit: Clubs";
-						break;
-					case NOSUIT:
-						text << "Trump Suit: No trump";
-						break;
-					}
-					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
-					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 + CARD_HEIGHT / 2);
-
-					//Update screen
-					SDL_RenderPresent(gRenderer);
 				}
 				else if (gameState == NAPOLEON_CHOOSE_SEC)
 				{
@@ -591,7 +849,7 @@ int main(int argc, char* args[])
 									else
 										secCard.setCard(secCard.getSuit(), secCard.getValue() - 1);
 									break;
-								case SDLK_SPACE:
+								case SDLK_RETURN:
 									int flag = true;
 									//find the person who has the secretary card and set them as secretary
 									for (int i = 0; i < TOTAL_CARDS; i++)
@@ -600,7 +858,7 @@ int main(int argc, char* args[])
 										if (player.at(turn).getHand()->at(i)->getSuit() == secCard.getSuit() &&
 											player.at(turn).getHand()->at(i)->getValue() == secCard.getValue())
 										{
-											cout << "Please choose a valid secretary";
+											std::cout << "Please choose a valid secretary";
 											flag = false;
 											break;
 										}
@@ -611,7 +869,7 @@ int main(int argc, char* args[])
 										if (playerBaggage.getHand()->at(i)->getSuit() == secCard.getSuit() &&
 											playerBaggage.getHand()->at(i)->getValue() == secCard.getValue())
 										{
-											cout << "Please choose a valid secretary";
+											std::cout << "Please choose a valid secretary";
 											flag = false;
 											break;
 										}
@@ -635,45 +893,181 @@ int main(int argc, char* args[])
 								}
 							}
 						}
+						text.str("");
+						text << "Choose secretary";
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 - 3 * gTextTexture.getHeight() / 2 - CARD_HEIGHT / 2);
+
+						text.str("");
+						switch (trumpSuit)
+						{
+						case HEARTS:
+							text << "Trump Suit: Hearts";
+							break;
+						case SPADES:
+							text << "Trump Suit: Spades";
+							break;
+						case DIAMONDS:
+							text << "Trump Suit: Diamonds";
+							break;
+						case CLUBS:
+							text << "Trump Suit: Clubs";
+							break;
+						case NOSUIT:
+							text << "Trump Suit: No trump";
+							break;
+						}
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 + CARD_HEIGHT / 2);
+
+						secCard.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+
+						//Update screen
+						SDL_RenderPresent(gRenderer);
 
 					}
 					//if it's a cpu, do something
 					else
 					{
+						bool flag = false;
+						//choose ace, king, of trump suit if you don't have those cards, otherwise, pick a random ace you don't own
+						for (int i = 0; i < TOTAL_CARDS; i++)
+						{
+							if (player.at(turn).getHand()->at(i)->getSuit() == trumpSuit && player.at(turn).getHand()->at(i)->getValue() == 1)
+							{
+								flag = true;
+								break;
+							}
+						}
+						for (int i = 0; i < 2; i++)
+						{
+							//make sure selected card is not within your hand or your baggage
+							if (playerBaggage.getHand()->at(i)->getSuit() == trumpSuit &&
+								playerBaggage.getHand()->at(i)->getValue() == 1)
+							{
+								flag = true;
+								break;
+							}
+						}
+						//set as ace of trump if you don't the ace
+						if (flag == false)
+						{
+							secCard.setCard(trumpSuit, 1);
+						}
+						else
+						{
+							flag = false;
+							for (int i = 0; i < TOTAL_CARDS; i++)
+							{
+								if (player.at(turn).getHand()->at(i)->getSuit() == trumpSuit && player.at(turn).getHand()->at(i)->getValue() == 13)
+								{
+									flag = true;
+									break;
+								}
+							}
+							for (int i = 0; i < 2; i++)
+							{
+								if (playerBaggage.getHand()->at(i)->getSuit() == trumpSuit &&
+									playerBaggage.getHand()->at(i)->getValue() == 13)
+								{
+									flag = true;
+									break;
+								}
+							}
+							if (flag == false)
+							{
+								secCard.setCard(trumpSuit, 13);
+							}
+							//otherwise, choose a random ace, you don't own
+							else
+							{
+								flag = false;
+								for (int tempSuit = 0; tempSuit < 3; tempSuit++)
+								{
+									flag = false;
+									for (int i = 0; i < TOTAL_CARDS; i++)
+									{
+										if (player.at(turn).getHand()->at(i)->getSuit() == tempSuit && player.at(turn).getHand()->at(i)->getValue() == 1)
+										{
+											flag = true;
+											break;
+										}
+									}
+									for (int i = 0; i < 2; i++)
+									{
+										//make sure selected card is not within your hand or your baggage
+										if (playerBaggage.getHand()->at(i)->getSuit() == tempSuit &&
+											playerBaggage.getHand()->at(i)->getValue() == 1)
+										{
+											flag = true;
+											break;
+										}
+									}
+									if (flag == false)
+									{
+										secCard.setCard(tempSuit, 1);
+										break;
+									}
+								}
 
+								//if you have all the aces, set as the highest value of trump you don't have
+								if (flag == true)
+								{
+									flag = false;
+									for (int tempValue = 12; tempValue > 2; tempValue--)
+									{
+										flag = false;
+										for (int i = 0; i < TOTAL_CARDS; i++)
+										{
+											if (player.at(turn).getHand()->at(i)->getSuit() == trumpSuit && player.at(turn).getHand()->at(i)->getValue() == tempValue)
+											{
+												flag = true;
+												break;
+											}
+										}
+										for (int i = 0; i < 2; i++)
+										{
+											//make sure selected card is not within your hand or your baggage
+											if (playerBaggage.getHand()->at(i)->getSuit() == trumpSuit &&
+												playerBaggage.getHand()->at(i)->getValue() == tempValue)
+											{
+												flag = true;
+												break;
+											}
+										}
+										if (flag == false)
+										{
+											secCard.setCard(trumpSuit, tempValue);
+											break;
+										}
+									}
+								}
+							}
+							
+						}
+
+						text.str("");
+						text << "Secretary card";
+						gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
+						gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 - 3 * gTextTexture.getHeight() / 2 - CARD_HEIGHT / 2);
+					
+						secCard.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
+
+						//Update screen
+						SDL_RenderPresent(gRenderer);
+						for (int i = 0; i < TOTAL_CARDS; i++)
+						{
+							for (int j = 0; j < 5; j++)
+							if (player.at(j).getHand()->at(i)->getSuit() == secCard.getSuit() &&
+								player.at(j).getHand()->at(i)->getValue() == secCard.getValue())
+							{
+								player.at(j).setRole(SECRETARY);
+								gameState = IN_GAME;
+								break;
+							}
+						}
+						SDL_Delay(5000);
 					}
-
-					text.str("");
-					text << "Choose secretary";
-					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
-					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 - 3 * gTextTexture.getHeight() / 2 - CARD_HEIGHT / 2);
-
-					text.str("");
-					switch (trumpSuit)
-					{
-					case HEARTS:
-						text << "Trump Suit: Hearts";
-						break;
-					case SPADES:
-						text << "Trump Suit: Spades";
-						break;
-					case DIAMONDS:
-						text << "Trump Suit: Diamonds";
-						break;
-					case CLUBS:
-						text << "Trump Suit: Clubs";
-						break;
-					case NOSUIT:
-						text << "Trump Suit: No trump";
-						break;
-					}
-					gTextTexture.loadFromRenderedText(gRenderer, text.str().c_str(), textColor, gFont);
-					gTextTexture.render(gRenderer, (SCREEN_WIDTH - gTextTexture.getWidth()) / 2, SCREEN_HEIGHT / 2 + CARD_HEIGHT / 2);
-
-					secCard.render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
-
-					//Update screen
-					SDL_RenderPresent(gRenderer);
 				}
 				else if (gameState == IN_GAME)
 				{
@@ -711,7 +1105,7 @@ int main(int argc, char* args[])
 									//Adjust the velocity
 									switch (e.key.keysym.sym)
 									{
-									case SDLK_SPACE:
+									case SDLK_RETURN:
 										if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
 										{
 											firstSuit = c.at(turn).getSuit();
@@ -777,7 +1171,7 @@ int main(int argc, char* args[])
 									//Adjust the velocity
 									switch (e.key.keysym.sym)
 									{
-									case SDLK_SPACE:
+									case SDLK_RETURN:
 										if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
 										{
 											firstSuit = c.at(turn).getSuit();
@@ -841,7 +1235,7 @@ int main(int argc, char* args[])
 									//Adjust the velocity
 									switch (e.key.keysym.sym)
 									{
-									case SDLK_SPACE:
+									case SDLK_RETURN:
 										if (player.at(turn).getHand()->playSelected(c.at(turn)) == true)
 										{
 											c.at(turn).setHidden(false);
@@ -959,7 +1353,7 @@ int main(int argc, char* args[])
 						text << "Napoleon";
 						break;
 					case SECRETARY:
-						text << "secretary";
+						text << "Secretary";
 						break;
 					case ENEMY:
 						text << "Enemy";
@@ -1024,6 +1418,10 @@ int main(int argc, char* args[])
 					player.at(3).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 0);
 					player.at(4).getHand()->render(gRenderer, &cardSheetTexture, &cardBackTexture, 270);
 
+					//render secetary card
+					gTextTexture.loadFromRenderedText(gRenderer, "Secretary: " + secCard.print(), textColor, gFontSmall);
+					gTextTexture.render(gRenderer, 5, SCREEN_HEIGHT - 40);
+
 					for (int i = 0; i < player.at(0).getHand()->getHandSize(); i++)
 					{
 						if (player.at(0).getHand()->at(i)->getCardSprite() == CARD_SPRITE_MOUSE_OVER_MOTION)
@@ -1071,7 +1469,7 @@ int main(int argc, char* args[])
 							//Adjust the velocity
 							switch (e.key.keysym.sym)
 							{
-							case SDLK_SPACE:
+							case SDLK_RETURN:
 								gameState = PLAY_AGAIN_SCREEN;
 							}
 						}
