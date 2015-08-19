@@ -14,3 +14,5 @@ FINISHED:
 -determine what mouseover/mousedown/mouseup does
 -change all sources of ALL_CARDS to hand.getHandSize()
 -add in Hand.render
+
+UNFINISHED
